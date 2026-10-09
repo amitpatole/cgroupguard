@@ -1,0 +1,8 @@
+# Release image: assembled by GoReleaser from the already built, per-platform binary.
+# There are no RUN steps, so multi-architecture images are built without emulation.
+FROM gcr.io/distroless/static-debian12@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/cgroupguard /cgroupguard
+COPY distribution/THIRD-PARTY-NOTICES.txt /licenses/THIRD-PARTY-NOTICES.txt
+USER 65532:65532
+ENTRYPOINT ["/cgroupguard"]

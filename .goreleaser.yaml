@@ -1,0 +1,118 @@
+# GoReleaser configuration (v2). Publishing is gated by the release workflow; locally use
+#   goreleaser release --snapshot --clean --skip=publish,sign
+version: 2
+project_name: cgroupguard
+
+before:
+  hooks:
+    - go mod verify
+    - scripts/gen-notices.sh --check
+
+builds:
+  - id: cgroupguard
+    main: ./cmd/cgroupguard
+    binary: cgroupguard
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: [-s, -w]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: archives
+    formats: [tar.gz]
+    format_overrides:
+      - {goos: windows, formats: [zip]}
+    name_template: "cgroupguard_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: LICENSE
+        dst: LICENSE
+      - src: NOTICE
+        dst: NOTICE
+      - src: distribution/THIRD-PARTY-NOTICES.txt
+        dst: THIRD-PARTY-NOTICES.txt
+      - src: distribution/README-RELEASE.txt
+        dst: README.txt
+      - src: deploy/*.yaml
+        dst: deploy
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+sboms:
+  - id: archive-sboms
+    artifacts: archive
+    cmd: syft
+    args: ["$artifact", "--output", "spdx-json=$document", "--source-name", "cgroupguard"]
+    documents: ["${artifact}.spdx.json"]
+
+# Signing uses a key held in a managed KMS/HSM (COSIGN_KEY_REF, for example awskms://..., gcpkms://...,
+# azurekms://...), never keyless: keyless signing would publish the repository and
+# workflow identity. The signing configuration below is empty on purpose, so nothing is uploaded to a public
+# transparency log either; users verify offline against the published public key.
+signs:
+  - id: sign-checksums
+    cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args: ["sign-blob", "--key", "{{ .Env.COSIGN_KEY_REF }}", "--bundle", "${signature}", "--signing-config", "distribution/cosign-signing-config.json", "--yes", "${artifact}"]
+    output: true
+
+nfpms:
+  - id: packages
+    package_name: cgroupguard
+    ids: [cgroupguard]
+    formats: [deb, rpm]
+    vendor: cgroupguard
+    maintainer: "cgroupguard maintainers <noreply@example.invalid>"
+    description: Evidence-based Kubernetes cgroup v1 to v2 readiness checker.
+    license: Apache-2.0
+    section: admin
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/cgroupguard/LICENSE
+      - src: NOTICE
+        dst: /usr/share/doc/cgroupguard/NOTICE
+      - src: distribution/THIRD-PARTY-NOTICES.txt
+        dst: /usr/share/doc/cgroupguard/THIRD-PARTY-NOTICES.txt
+    # Installing the CLI must not start a controller or touch any cluster: no scripts.
+
+dockers_v2:
+  - id: image
+    ids: [cgroupguard]
+    dockerfile: Dockerfile.release
+    images: ["ghcr.io/amitpatole/cgroupguard"]
+    tags: ["{{ .Version }}", "latest"]
+    platforms: [linux/amd64, linux/arm64]
+    extra_files:
+      - distribution/THIRD-PARTY-NOTICES.txt
+
+# Release assets are attached (as a draft) to this repository's Releases page.
+release:
+  github:
+    owner: amitpatole
+    name: cgroupguard
+  draft: true
+  prerelease: auto
+  name_template: "cgroupguard {{ .Version }}"
+
+# Release notes come from the matching section of CHANGELOG.md (--release-notes), not from commit messages.
+changelog:
+  disable: true
+
+# A Homebrew tap is not part of 0.1.0; the cask returns once the tap repository exists.
+
+krews:
+  - name: cgroupguard
+    ids: [archives]
+    url_template: "https://github.com/amitpatole/cgroupguard/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    homepage: "https://github.com/amitpatole/cgroupguard"
+    short_description: Check Kubernetes nodes and workloads for cgroup v2 readiness
+    description: |
+      Reads node and workload metadata and reports what blocks or endangers a move from cgroup v1 to
+      cgroup v2. Read-only by default; output is advisory and never certifies upgrade readiness.
+    caveats: |
+      Commands that change anything (fix --apply, fix --pr) ask you to type a confirmation.
+    skip_upload: true

@@ -1,0 +1,91 @@
+name: Release
+# A version tag starts the release. The "release" environment requires the maintainer's approval before the
+# publishing job can run. Running the workflow by hand (workflow_dispatch) is a dry run: it builds everything
+# with a throwaway key and publishes nothing.
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: {go-version-file: go.mod, cache: true}
+      - name: The tag matches the version in the code
+        if: github.ref_type == 'tag'
+        run: test "${GITHUB_REF_NAME#v}" = "$(sed -n 's/.*Version = "\(.*\)"/\1/p' internal/version/version.go)"
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+  dry-run:
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: {go-version-file: go.mod, cache: true}
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Install pinned tools
+        run: |
+          scripts/install-tools.sh
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: Build everything and sign with a throwaway key (nothing is published)
+        run: |
+          mkdir -p "$RUNNER_TEMP/k" && (cd "$RUNNER_TEMP/k" && COSIGN_PASSWORD="" cosign generate-key-pair)
+          COSIGN_PASSWORD="" COSIGN_KEY_REF="$RUNNER_TEMP/k/cosign.key" goreleaser release --snapshot --clean --skip=publish,docker
+  release:
+    if: github.ref_type == 'tag'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: release
+    permissions:
+      contents: write     # create the draft release on this repository
+      packages: write     # push the container image and the chart
+      id-token: write     # short-lived Google credentials for the signing key; no stored key material
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with: {go-version-file: go.mod, cache: true}
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install pinned tools
+        run: |
+          scripts/install-tools.sh
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      # The signing key lives in Google Cloud KMS (HSM). The job exchanges GitHub's OIDC token for short-lived
+      # credentials of a service account that can only sign with that one key; the identity pool accepts this
+      # repository, the "release" environment and version tags only.
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SIGNER_SERVICE_ACCOUNT }}
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## "v" " {f=1; next} /^## /{f=0} f' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          test -s "$RUNNER_TEMP/notes.md"
+      - name: Build, sign and create the draft release
+        run: goreleaser release --clean --release-notes "$RUNNER_TEMP/notes.md"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COSIGN_KEY_REF: ${{ vars.COSIGN_KEY_REF }}
+          GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      - name: Package and push the Helm chart
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          helm package charts/cgroupguard --version "$ver" --app-version "$ver" -d "$RUNNER_TEMP/chart"
+          helm push "$RUNNER_TEMP"/chart/cgroupguard-*.tgz oci://ghcr.io/amitpatole/charts
