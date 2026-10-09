@@ -5,7 +5,6 @@ Pick one. All channels carry the same signed release; see [Verify what you downl
 | Channel | Command |
 |---|---|
 | Release archive | download `cgroupguard_VERSION_OS_ARCH.tar.gz` (`.zip` on Windows) from the releases page, verify, unpack |
-| Homebrew | `brew install amitpatole/tap/cgroupguard` |
 | kubectl plugin (Krew) | `kubectl krew install cgroupguard`, then `kubectl cgroupguard check` |
 | Debian/Ubuntu | `sudo dpkg -i cgroupguard_VERSION_linux_ARCH.deb` |
 | RHEL/Fedora | `sudo rpm -i cgroupguard_VERSION_linux_ARCH.rpm` |
@@ -33,4 +32,4 @@ sha256sum -c checksums.txt --ignore-missing
 Also published per archive: an SPDX software bill of materials (`*.spdx.json`). Container images and the Helm chart are signed the same
 way (`cosign verify --key cosign.pub --insecure-ignore-tlog=true IMAGE@sha256:...`).
 
-macOS note: the binary is not Apple-notarized. Verify the signature as above; the Homebrew cask removes the quarantine flag for you.
+macOS note: the binary is not Apple-notarized. Verify the signature as above; after verifying, remove the quarantine flag with `xattr -dr com.apple.quarantine cgroupguard`.

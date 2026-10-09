@@ -2,8 +2,6 @@
 
 ![demo](media/demo.gif)
 
-> **Pre-release documentation.** Download locations below become valid when the first release is published.
-
 cgroupguard checks a Kubernetes cluster, or a saved snapshot of one, for what a move from **cgroup v1 to cgroup v2** will break.
 From Kubernetes 1.35 the kubelet refuses to start on a cgroup v1 node by default, and cgroup v1 support is planned for removal.
 The risk is not only the nodes: workloads and agents that read v1 paths or use old runtimes can break once their node moves to v2.
