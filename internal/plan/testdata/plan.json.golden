@@ -1,0 +1,727 @@
+{
+  "schemaVersion": 1,
+  "target": "1.35",
+  "groups": [
+    {
+      "provider": "aks",
+      "pool": "userpool1",
+      "nodes": [
+        "aks-c-1"
+      ],
+      "podsAffected": 2,
+      "canary": true,
+      "arch": "amd64",
+      "instanceType": "Standard_D4s_v3",
+      "osFamily": "ubuntu",
+      "stateful": true
+    },
+    {
+      "provider": "eks",
+      "pool": "workers-al2",
+      "nodes": [
+        "eks-b-1"
+      ],
+      "podsAffected": 2,
+      "arch": "amd64",
+      "instanceType": "m5.large",
+      "osFamily": "other"
+    },
+    {
+      "provider": "self-managed",
+      "nodes": [
+        "onprem-1",
+        "onprem-2"
+      ],
+      "podsAffected": 2,
+      "osFamily": "other"
+    },
+    {
+      "provider": "gke",
+      "pool": "pool-legacy",
+      "nodes": [
+        "gke-a-1",
+        "gke-a-2"
+      ],
+      "podsAffected": 4,
+      "arch": "amd64",
+      "instanceType": "e2-standard-4",
+      "osFamily": "other"
+    }
+  ],
+  "phases": [
+    {
+      "id": "P1",
+      "title": "Prepare and assess",
+      "steps": [
+        {
+          "id": "P1.1",
+          "title": "Set the variables the commands in this plan use",
+          "kind": "manual",
+          "disruption": "none",
+          "requiresApproval": false,
+          "details": "Commands reference shell variables instead of guessed values. Set them yourself: CLUSTER_NAME for managed clusters, LOCATION (GKE region or zone), RESOURCE_GROUP (AKS), and your kubectl context. Nothing in this plan reads or changes them."
+        },
+        {
+          "id": "P1.2",
+          "title": "Establish the cgroup mode of nodes that were not measured",
+          "kind": "inspect",
+          "disruption": "none",
+          "requiresApproval": false,
+          "details": "Unknown nodes: mystery-1. On each node run the command below, or re-run the scan with --prometheus-url, --kubelet-metrics (see docs/optional-permissions.md) or the guarded --probe.",
+          "commands": [
+            "stat -fc %T /sys/fs/cgroup/   # cgroup2fs = v2, tmpfs = v1"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          ]
+        },
+        {
+          "id": "P1.3",
+          "title": "Review disruption protection before touching any node",
+          "kind": "inspect",
+          "disruption": "none",
+          "requiresApproval": false,
+          "details": "Draining respects PodDisruptionBudgets; a workload with one replica, no budget or persistent state is the most exposed. Fragile workloads among the findings (single replica, no budget, or persistent state): batch/Job/reader, obs/DaemonSet/metrics, shop/StatefulSet/db.",
+          "commands": [
+            "kubectl get pdb --all-namespaces",
+            "kubectl get nodes -o wide"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
+          ]
+        },
+        {
+          "id": "P1.4",
+          "title": "Take a restorable backup of everything this plan can change",
+          "kind": "manual",
+          "disruption": "none",
+          "requiresApproval": false,
+          "details": "Export or snapshot infrastructure-as-code state, node pool definitions, kubelet and container runtime configuration, and cluster state (for example etcd) in the way your platform documents. Keep the backup until the post-migration soak period ends."
+        },
+        {
+          "id": "P1.5",
+          "title": "Agree the migration order and a canary",
+          "kind": "manual",
+          "disruption": "none",
+          "requiresApproval": false,
+          "details": "Groups are ordered by measured blast radius, smallest first. The first group is the canary: complete and verify it, and let it soak, before starting the next."
+        }
+      ]
+    },
+    {
+      "id": "P2",
+      "title": "Fix workloads that cgroup v2 can break",
+      "steps": [
+        {
+          "id": "W.CG101",
+          "title": "Update JVM images to a build with cgroup v2 container support",
+          "kind": "manual",
+          "disruption": "rolling",
+          "requiresApproval": true,
+          "scope": "1 container(s)",
+          "details": "Image tag suggests a version below the documented cgroup v2 support threshold 11.0.16; verify the actual binary and vendor backports. Resources (namespace/kind/name/containerType/container): shop/Deployment/api/regular/app",
+          "preconditions": [
+            "Change the manifests in your source repository (GitOps) rather than editing live objects."
+          ],
+          "verification": [
+            "kubectl rollout status \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e",
+            "Re-run cgroupguard check; the finding for this rule should be gone or reduced to a note."
+          ],
+          "rollback": [
+            "Revert the manifest change in source control and let your delivery pipeline roll back, or run kubectl rollout undo \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          ]
+        },
+        {
+          "id": "W.CG102",
+          "title": "Update cAdvisor to 0.43.0 or newer",
+          "kind": "manual",
+          "disruption": "rolling",
+          "requiresApproval": true,
+          "scope": "1 container(s)",
+          "details": "Image tag suggests a version below the documented cgroup v2 support threshold 0.43.0; verify the actual binary and vendor backports. Resources (namespace/kind/name/containerType/container): obs/DaemonSet/metrics/regular/agent",
+          "preconditions": [
+            "Change the manifests in your source repository (GitOps) rather than editing live objects."
+          ],
+          "verification": [
+            "kubectl rollout status \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e",
+            "Re-run cgroupguard check; the finding for this rule should be gone or reduced to a note."
+          ],
+          "rollback": [
+            "Revert the manifest change in source control and let your delivery pipeline roll back, or run kubectl rollout undo \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          ]
+        },
+        {
+          "id": "W.CG103",
+          "title": "Replace direct reads of cgroup v1 paths",
+          "kind": "manual",
+          "disruption": "rolling",
+          "requiresApproval": true,
+          "scope": "1 container(s)",
+          "details": "Direct reads of cgroup v1 controller paths can fail on v2. Inspect the referenced command or mount; the tool does not execute it. Resources (namespace/kind/name/containerType/container): batch/Job/reader/regular/task",
+          "preconditions": [
+            "Change the manifests in your source repository (GitOps) rather than editing live objects."
+          ],
+          "verification": [
+            "kubectl rollout status \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e",
+            "Re-run cgroupguard check; the finding for this rule should be gone or reduced to a note."
+          ],
+          "rollback": [
+            "Revert the manifest change in source control and let your delivery pipeline roll back, or run kubectl rollout undo \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          ]
+        },
+        {
+          "id": "W.CG104",
+          "title": "Identify the runtime of unrecognized images",
+          "kind": "manual",
+          "disruption": "rolling",
+          "requiresApproval": true,
+          "scope": "1 container(s)",
+          "details": "No verified rule covers this image. Inspect its runtime and custom cgroup access before migration. Resources (namespace/kind/name/containerType/container): batch/Job/reader/regular/task",
+          "preconditions": [
+            "Change the manifests in your source repository (GitOps) rather than editing live objects."
+          ],
+          "verification": [
+            "kubectl rollout status \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e",
+            "Re-run cgroupguard check; the finding for this rule should be gone or reduced to a note."
+          ],
+          "rollback": [
+            "Revert the manifest change in source control and let your delivery pipeline roll back, or run kubectl rollout undo \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          ]
+        },
+        {
+          "id": "W.CG108",
+          "title": "Update Node.js to 20.3.0 or newer",
+          "kind": "manual",
+          "disruption": "rolling",
+          "requiresApproval": true,
+          "scope": "1 container(s)",
+          "details": "Image tag suggests a version below the documented cgroup v2 support threshold 20.3.0; verify the actual binary and vendor backports. Node.js reads cgroup v2 memory limits (via libuv) from v20.3.0; the v18 line does not reliably detect them. Resources (namespace/kind/name/containerType/container): shop/StatefulSet/db/regular/db",
+          "preconditions": [
+            "Change the manifests in your source repository (GitOps) rather than editing live objects."
+          ],
+          "verification": [
+            "kubectl rollout status \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e",
+            "Re-run cgroupguard check; the finding for this rule should be gone or reduced to a note."
+          ],
+          "rollback": [
+            "Revert the manifest change in source control and let your delivery pipeline roll back, or run kubectl rollout undo \u003ckind\u003e/\u003cname\u003e -n \u003cnamespace\u003e."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P3",
+      "title": "Migrate node groups to cgroup v2 (one group at a time, canary first)",
+      "steps": [
+        {
+          "id": "M1.1",
+          "title": "Add a replacement node pool on a cgroup v2 OS image",
+          "kind": "command",
+          "disruption": "platform",
+          "requiresApproval": true,
+          "scope": "aks pool userpool1, 1 nodes, 2 pods",
+          "details": "CANARY GROUP (smallest measured blast radius). Ubuntu 22.04 is listed as cgroup v2 on the AKS supported-versions page. If the old pool is the cluster's only system pool, create the replacement with --mode System first: a system pool can only be deleted if another system pool exists. Labels, taints, zones, max pods and autoscaling settings are not copied; add the matching flags from the old pool definition. Linux pool names are limited to 12 characters.",
+          "preconditions": [
+            "Backup from P1.4 is complete.",
+            "Regional quota exists for the extra nodes."
+          ],
+          "commands": [
+            "az aks nodepool add --resource-group \"$RESOURCE_GROUP\" --cluster-name \"$CLUSTER_NAME\" --name userpool1v2 --os-type Linux --os-sku Ubuntu2204 --mode User --node-count 1 --node-vm-size Standard_D4s_v3"
+          ],
+          "verification": [
+            "kubectl get nodes -L kubernetes.azure.com/agentpool",
+            "cgroupguard check --target-version 1.35 --kubelet-metrics   # new nodes should report v2"
+          ],
+          "rollback": [
+            "Delete only the new pool: az aks nodepool delete --resource-group \"$RESOURCE_GROUP\" --cluster-name \"$CLUSTER_NAME\" --name userpool1v2"
+          ],
+          "sources": [
+            "https://learn.microsoft.com/en-us/azure/aks/upgrade-os-version",
+            "https://learn.microsoft.com/en-us/azure/aks/create-node-pools"
+          ]
+        },
+        {
+          "id": "M1.2",
+          "title": "Cordon the old nodes",
+          "kind": "command",
+          "disruption": "node-drain",
+          "requiresApproval": true,
+          "scope": "old pool userpool1",
+          "commands": [
+            "kubectl cordon aks-c-1"
+          ],
+          "verification": [
+            "kubectl get nodes   # old nodes show SchedulingDisabled"
+          ],
+          "rollback": [
+            "kubectl uncordon aks-c-1"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
+          ],
+          "action": {
+            "type": "cordon",
+            "nodes": [
+              "aks-c-1"
+            ]
+          }
+        },
+        {
+          "id": "M1.3",
+          "title": "Drain the old nodes one at a time",
+          "kind": "command",
+          "disruption": "node-drain",
+          "requiresApproval": true,
+          "scope": "old pool userpool1",
+          "details": "Draining uses the eviction API and respects PodDisruptionBudgets. Do not use --disable-eviction or --force. If a drain blocks on a budget, fix the cause instead of bypassing it.",
+          "commands": [
+            "kubectl drain aks-c-1 --ignore-daemonsets --delete-emptydir-data --timeout=30m"
+          ],
+          "verification": [
+            "kubectl get pods --all-namespaces -o wide --field-selector spec.nodeName=aks-c-1",
+            "Confirm replacement pods are Ready on the new nodes before the next drain."
+          ],
+          "rollback": [
+            "kubectl uncordon aks-c-1   # pods are rescheduled by their controllers"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
+          ],
+          "action": {
+            "type": "drain",
+            "nodes": [
+              "aks-c-1"
+            ],
+            "timeoutMinutes": 30
+          }
+        },
+        {
+          "id": "M1.4",
+          "title": "Delete the old node pool after a soak period",
+          "kind": "command",
+          "disruption": "node-replace",
+          "requiresApproval": true,
+          "scope": "old pool userpool1",
+          "details": "Irreversible. Microsoft documents: \"When you delete a node pool, AKS doesn't perform cordon and drain\", so the previous steps are mandatory.",
+          "preconditions": [
+            "Workloads run healthy on the new pool.",
+            "The old pool definition is saved in source control or backed up."
+          ],
+          "commands": [
+            "az aks nodepool delete --resource-group \"$RESOURCE_GROUP\" --cluster-name \"$CLUSTER_NAME\" --name userpool1"
+          ],
+          "verification": [
+            "kubectl get nodes -L kubernetes.azure.com/agentpool"
+          ],
+          "rollback": [
+            "Deletion cannot be undone. Recreate the pool from the saved definition and re-run the migration steps."
+          ],
+          "sources": [
+            "https://learn.microsoft.com/en-us/azure/aks/resize-node-pool"
+          ]
+        },
+        {
+          "id": "M2.1",
+          "title": "Review the replacement managed node group",
+          "kind": "config",
+          "disruption": "none",
+          "requiresApproval": false,
+          "scope": "eks pool workers-al2, 1 nodes, 2 pods",
+          "details": "AL2 is cgroup v1; AWS recommends AL2023 or Bottlerocket, which enable cgroup v2 by default. For managed node groups without a custom-AMI launch template AWS requires a blue/green migration: create a new group with the new AMI type, move workloads, delete the old group. Replace the REPLACE_WITH_* placeholders (they are not known from the cluster). For Bottlerocket use amiFamily: Bottlerocket instead.",
+          "sources": [
+            "https://docs.aws.amazon.com/eks/latest/userguide/al2023.html",
+            "https://docs.aws.amazon.com/eks/latest/userguide/eks-ami-deprecation-faqs.html",
+            "https://docs.aws.amazon.com/eks/latest/eksctl/custom-ami-support.html"
+          ],
+          "files": [
+            {
+              "path": "eks/workers-al2-nodegroup.yaml",
+              "content": "# Review before use. Sizes are copied from the current node count; set min/max to match the old group.\napiVersion: eksctl.io/v1alpha5\nkind: ClusterConfig\nmetadata:\n  name: REPLACE_WITH_CLUSTER_NAME\n  region: REPLACE_WITH_REGION\nmanagedNodeGroups:\n  - name: workers-al2-al2023\n    amiFamily: AmazonLinux2023\n    instanceType: m5.large\n    desiredCapacity: 1\n    minSize: 1\n    maxSize: 2\n"
+            }
+          ]
+        },
+        {
+          "id": "M2.2",
+          "title": "Create the replacement node group",
+          "kind": "command",
+          "disruption": "platform",
+          "requiresApproval": true,
+          "scope": "eks pool workers-al2, 1 nodes, 2 pods",
+          "details": "Creates new nodes next to the old ones; nothing is drained yet. AL2023 needs eksctl 0.176.0 or newer and VPC CNI 1.16.2 or newer; nodeadm replaces bootstrap.sh for custom launch templates.",
+          "preconditions": [
+            "Placeholders in eks/workers-al2-nodegroup.yaml are replaced and the file is reviewed.",
+            "CoreDNS has at least 2 replicas and any cluster autoscaler is paused for the move."
+          ],
+          "commands": [
+            "eksctl create nodegroup --config-file=eks/workers-al2-nodegroup.yaml"
+          ],
+          "verification": [
+            "kubectl get nodes -L eks.amazonaws.com/nodegroup",
+            "cgroupguard check --target-version 1.35 --kubelet-metrics   # new nodes should report v2"
+          ],
+          "rollback": [
+            "Delete only the new node group: eksctl delete nodegroup --cluster \"$CLUSTER_NAME\" --name workers-al2-al2023"
+          ],
+          "sources": [
+            "https://docs.aws.amazon.com/eks/latest/userguide/al2023.html",
+            "https://docs.aws.amazon.com/eks/latest/userguide/migrate-stack.html"
+          ]
+        },
+        {
+          "id": "M2.3",
+          "title": "Cordon the old nodes",
+          "kind": "command",
+          "disruption": "node-drain",
+          "requiresApproval": true,
+          "scope": "old node group workers-al2",
+          "commands": [
+            "kubectl cordon eks-b-1"
+          ],
+          "verification": [
+            "kubectl get nodes   # old nodes show SchedulingDisabled"
+          ],
+          "rollback": [
+            "kubectl uncordon eks-b-1"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
+          ],
+          "action": {
+            "type": "cordon",
+            "nodes": [
+              "eks-b-1"
+            ]
+          }
+        },
+        {
+          "id": "M2.4",
+          "title": "Drain the old nodes one at a time",
+          "kind": "command",
+          "disruption": "node-drain",
+          "requiresApproval": true,
+          "scope": "old node group workers-al2",
+          "details": "Draining uses the eviction API and respects PodDisruptionBudgets. Do not use --disable-eviction or --force. If a drain blocks on a budget, fix the cause instead of bypassing it.",
+          "commands": [
+            "kubectl drain eks-b-1 --ignore-daemonsets --delete-emptydir-data --timeout=30m"
+          ],
+          "verification": [
+            "kubectl get pods --all-namespaces -o wide --field-selector spec.nodeName=eks-b-1",
+            "Confirm replacement pods are Ready on the new nodes before the next drain."
+          ],
+          "rollback": [
+            "kubectl uncordon eks-b-1   # pods are rescheduled by their controllers"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
+          ],
+          "action": {
+            "type": "drain",
+            "nodes": [
+              "eks-b-1"
+            ],
+            "timeoutMinutes": 30
+          }
+        },
+        {
+          "id": "M2.5",
+          "title": "Delete the old node group after a soak period",
+          "kind": "command",
+          "disruption": "node-replace",
+          "requiresApproval": true,
+          "scope": "old node group workers-al2",
+          "details": "Irreversible. Keep the old group, drained and cordoned, through an agreed soak period before deleting it.",
+          "preconditions": [
+            "Workloads run healthy on the new group.",
+            "The old group's definition is saved in source control or backed up."
+          ],
+          "commands": [
+            "eksctl delete nodegroup --cluster \"$CLUSTER_NAME\" --name workers-al2"
+          ],
+          "verification": [
+            "kubectl get nodes -L eks.amazonaws.com/nodegroup"
+          ],
+          "rollback": [
+            "Deletion cannot be undone. Recreate the group from the saved definition and re-run the migration steps."
+          ],
+          "sources": [
+            "https://docs.aws.amazon.com/eks/latest/userguide/migrate-stack.html"
+          ]
+        },
+        {
+          "id": "M3.1",
+          "title": "Check that each node can run cgroup v2",
+          "kind": "inspect",
+          "disruption": "none",
+          "requiresApproval": false,
+          "scope": "self-managed, 2 nodes, 2 pods",
+          "details": "Requirements: Linux kernel 5.8 or newer, containerd 1.4+ or cri-o 1.20+, and the systemd cgroup driver in both the kubelet and the runtime. Nodes, in the order they should be changed (one at a time): onprem-1, onprem-2.",
+          "commands": [
+            "uname -r",
+            "containerd --version   # or: crio --version",
+            "stat -fc %T /sys/fs/cgroup/   # tmpfs = v1, cgroup2fs = v2"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/",
+            "https://kubernetes.io/docs/setup/production-environment/container-runtimes/"
+          ]
+        },
+        {
+          "id": "M3.2",
+          "title": "Cordon and drain one node",
+          "kind": "command",
+          "disruption": "node-drain",
+          "requiresApproval": true,
+          "scope": "self-managed, 2 nodes, 2 pods",
+          "details": "Repeat steps M3.2 to M3.6 for each node in the order above, finishing and verifying one node before the next. Example node: onprem-1.",
+          "commands": [
+            "kubectl cordon onprem-1",
+            "kubectl drain onprem-1 --ignore-daemonsets --delete-emptydir-data --timeout=30m"
+          ],
+          "verification": [
+            "kubectl get node onprem-1",
+            "Replacement pods are Ready elsewhere."
+          ],
+          "rollback": [
+            "kubectl uncordon onprem-1"
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
+          ]
+        },
+        {
+          "id": "M3.3",
+          "title": "Back up the node's boot, runtime and kubelet configuration",
+          "kind": "command",
+          "disruption": "config-change",
+          "requiresApproval": true,
+          "scope": "self-managed, 2 nodes, 2 pods",
+          "commands": [
+            "sudo cp -a /etc/default/grub /etc/default/grub.cgroupguard.bak",
+            "sudo cp -a /etc/containerd/config.toml /etc/containerd/config.toml.cgroupguard.bak",
+            "sudo cp -a /var/lib/kubelet/config.yaml /var/lib/kubelet/config.yaml.cgroupguard.bak"
+          ],
+          "verification": [
+            "ls -l /etc/default/grub.cgroupguard.bak /etc/containerd/config.toml.cgroupguard.bak /var/lib/kubelet/config.yaml.cgroupguard.bak"
+          ],
+          "rollback": [
+            "Nothing to undo: these are copies. Paths vary by distribution and installer; adjust them to your node."
+          ]
+        },
+        {
+          "id": "M3.4",
+          "title": "Enable cgroup v2 and the systemd cgroup driver on the node",
+          "kind": "config",
+          "disruption": "config-change",
+          "requiresApproval": true,
+          "scope": "self-managed, 2 nodes, 2 pods",
+          "details": "Debian/Ubuntu: add systemd.unified_cgroup_hierarchy=1 to GRUB_CMDLINE_LINUX in /etc/default/grub, then run update-grub (RHEL-like systems: use grubby --update-kernel=ALL --args=\"systemd.unified_cgroup_hierarchy=1\"). In containerd set SystemdCgroup = true under [plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc.options]; in the kubelet configuration set cgroupDriver: systemd. The kubelet and the runtime must use the same cgroup driver.",
+          "commands": [
+            "sudo sed -i 's/^GRUB_CMDLINE_LINUX=\"\\(.*\\)\"/GRUB_CMDLINE_LINUX=\"\\1 systemd.unified_cgroup_hierarchy=1\"/' /etc/default/grub",
+            "sudo update-grub",
+            "# set SystemdCgroup = true in /etc/containerd/config.toml and cgroupDriver: systemd in /var/lib/kubelet/config.yaml"
+          ],
+          "verification": [
+            "grep unified_cgroup_hierarchy /etc/default/grub",
+            "grep -n SystemdCgroup /etc/containerd/config.toml",
+            "grep -n cgroupDriver /var/lib/kubelet/config.yaml"
+          ],
+          "rollback": [
+            "Restore the *.cgroupguard.bak copies and run update-grub (or grubby) again before rebooting."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/",
+            "https://kubernetes.io/docs/setup/production-environment/container-runtimes/"
+          ]
+        },
+        {
+          "id": "M3.5",
+          "title": "Reboot the node and confirm cgroup v2",
+          "kind": "command",
+          "disruption": "node-reboot",
+          "requiresApproval": true,
+          "scope": "self-managed, 2 nodes, 2 pods",
+          "commands": [
+            "sudo systemctl reboot",
+            "# after it returns:",
+            "stat -fc %T /sys/fs/cgroup/"
+          ],
+          "verification": [
+            "stat prints cgroup2fs",
+            "kubectl get node onprem-1   # Ready"
+          ],
+          "rollback": [
+            "Boot the previous kernel command line from the GRUB menu, or restore the backups from step M3.3, then reboot. Do not uncordon a node that is not Ready."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          ]
+        },
+        {
+          "id": "M3.6",
+          "title": "Uncordon the node and let it soak",
+          "kind": "command",
+          "disruption": "none",
+          "requiresApproval": false,
+          "scope": "self-managed, 2 nodes, 2 pods",
+          "commands": [
+            "kubectl uncordon onprem-1"
+          ],
+          "verification": [
+            "cgroupguard check --target-version \u003ctarget\u003e --kubelet-metrics   # the node reports v2"
+          ]
+        },
+        {
+          "id": "M4.1",
+          "title": "Review the node pool and its upgrade strategy",
+          "kind": "inspect",
+          "disruption": "none",
+          "requiresApproval": false,
+          "scope": "gke pool pool-legacy, 2 nodes, 4 pods",
+          "details": "GKE applies a cgroup mode change by re-creating nodes with its surge upgrade strategy, immediately and without respecting maintenance policies. Choose max-surge or blue-green settings first if the default is too aggressive. If you prefer a blue/green replacement, generate the module with --emit terraform (terraform/gke-\u003cpool\u003e/). Autopilot clusters and auto-provisioned pools use a cluster-level command instead: gcloud container clusters update \"$CLUSTER_NAME\" --autoprovisioning-cgroup-mode=v2.",
+          "commands": [
+            "gcloud container node-pools describe pool-legacy --cluster \"$CLUSTER_NAME\" --location \"$LOCATION\"",
+            "# optional: gcloud container node-pools update pool-legacy --cluster \"$CLUSTER_NAME\" --location \"$LOCATION\" --max-surge-upgrade=1 --max-unavailable-upgrade=0"
+          ],
+          "sources": [
+            "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/migrate-cgroupv2",
+            "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/node-pool-upgrade-strategies"
+          ]
+        },
+        {
+          "id": "M4.2",
+          "title": "Review the node system configuration file",
+          "kind": "config",
+          "disruption": "none",
+          "requiresApproval": false,
+          "scope": "gke pool pool-legacy, 2 nodes, 4 pods",
+          "details": "Save this file and review it. It sets only the cgroup mode.",
+          "sources": [
+            "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/node-system-config"
+          ],
+          "files": [
+            {
+              "path": "gke/pool-legacy-system-config.yaml",
+              "content": "linuxConfig:\n  cgroupMode: 'CGROUP_MODE_V2'\n"
+            }
+          ]
+        },
+        {
+          "id": "M4.3",
+          "title": "Apply cgroup v2 to the node pool (nodes are re-created)",
+          "kind": "command",
+          "disruption": "node-replace",
+          "requiresApproval": true,
+          "scope": "gke pool pool-legacy, 2 nodes, 4 pods",
+          "details": "Documented by Google: \"This change requires re-creating the nodes, which can cause disruption to your running workloads.\" Run during an agreed window; protect workloads with PodDisruptionBudgets first.",
+          "preconditions": [
+            "Backup from P1.4 is complete.",
+            "PodDisruptionBudgets reviewed in P1.3.",
+            "The pool runs a GKE version that supports the cgroup mode setting."
+          ],
+          "commands": [
+            "gcloud container node-pools update pool-legacy --cluster \"$CLUSTER_NAME\" --location \"$LOCATION\" --system-config-from-file=gke/pool-legacy-system-config.yaml"
+          ],
+          "verification": [
+            "gcloud container node-pools describe pool-legacy --cluster \"$CLUSTER_NAME\" --location \"$LOCATION\"",
+            "cgroupguard check --target-version 1.35 --kubelet-metrics   # nodes should report v2"
+          ],
+          "rollback": [
+            "Re-apply a system configuration file with cgroupMode: 'CGROUP_MODE_V1' using the same command; this re-creates the nodes again. GKE removes cgroup v1 support with minor version 1.35, so on 1.35 and later rollback to v1 is not available: roll back workload changes instead.",
+            "If nodes fail to become Ready, stop and open a Google Cloud support case; do not delete the pool."
+          ],
+          "sources": [
+            "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/migrate-cgroupv2",
+            "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/node-system-config"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P4",
+      "title": "Stopgap (not recommended): allow the kubelet on cgroup v1",
+      "steps": [
+        {
+          "id": "S.1",
+          "title": "Temporarily set failCgroupV1: false until 2026-12-31",
+          "kind": "config",
+          "disruption": "config-change",
+          "requiresApproval": true,
+          "details": "This only lets the kubelet start on a cgroup v1 node. It does not make workloads or the node compatible, and it is not available on every managed platform. Kubernetes deprecates cgroup v1 and plans removal, so treat 2026-12-31 as a hard deadline owned by a named person. Remove the setting when the node is migrated.",
+          "commands": [
+            "# In the kubelet configuration file on each affected node, add:",
+            "#   failCgroupV1: false",
+            "sudo systemctl restart kubelet"
+          ],
+          "verification": [
+            "kubectl get node \u003cnode\u003e -o wide",
+            "systemctl status kubelet"
+          ],
+          "rollback": [
+            "Remove failCgroupV1: false (the default is true) and restart the kubelet; the node must be on cgroup v2 first or the kubelet will refuse to start."
+          ],
+          "sources": [
+            "https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/"
+          ],
+          "files": [
+            {
+              "path": "stopgap/kubelet-failcgroupv1.yaml",
+              "content": "# TEMPORARY. Remove by 2026-12-31.\napiVersion: kubelet.config.k8s.io/v1beta1\nkind: KubeletConfiguration\nfailCgroupV1: false\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P5",
+      "title": "Verify",
+      "steps": [
+        {
+          "id": "V.1",
+          "title": "Re-scan the cluster",
+          "kind": "inspect",
+          "disruption": "none",
+          "requiresApproval": false,
+          "details": "Expected: every Linux node reports cgroup v2 from direct evidence (metric, Prometheus or probe). A clean scan is still not an upgrade certification.",
+          "commands": [
+            "cgroupguard check --target-version 1.35 --exit-error --format json"
+          ]
+        },
+        {
+          "id": "V.2",
+          "title": "Confirm workload health",
+          "kind": "inspect",
+          "disruption": "none",
+          "requiresApproval": false,
+          "commands": [
+            "kubectl get nodes -o wide",
+            "kubectl get pods --all-namespaces --field-selector=status.phase!=Running,status.phase!=Succeeded"
+          ]
+        }
+      ]
+    }
+  ],
+  "assumptions": [
+    "1 Linux node(s) have an unknown cgroup mode. They are not migrated by this plan until the mode is established (step P1.2)."
+  ],
+  "limitations": [
+    "Offline evidence is user-supplied and is not authenticated or checked for freshness.",
+    "Workload analysis uses image tags and allowlisted manifest path references; no image layers, runtime binaries, mounted configs or application behavior are inspected.",
+    "Kubelet configuration, enabled cgroup controllers and other upgrade prerequisites remain unassessed. A clean heuristic scan is not proof of cluster readiness.",
+    "Offline snapshots are user-supplied, unauthenticated evidence with no freshness guarantee."
+  ]
+}

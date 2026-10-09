@@ -1,0 +1,48 @@
+# Mandatory guardrail for --probe. Apply it BEFORE granting any identity permission to
+# create pods in the probe namespace. It denies every pod in that namespace except one
+# with exactly the probe's shape, so the pod-create permission cannot be used to run
+# anything else. Requires ValidatingAdmissionPolicy (GA in Kubernetes 1.30).
+# Label the dedicated namespace first:  kubectl label ns cgroupguard cgroupguard.io/probe-namespace=true
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: cgroupguard-probe-shape
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  validations:
+    - expression: "object.spec.containers.size() == 1 && !has(object.spec.initContainers) && !has(object.spec.ephemeralContainers)"
+      message: "probe pods have exactly one container"
+    - expression: "object.spec.containers[0].name == 'probe' && object.spec.containers[0].image.matches('^[^\\\\s@]+@sha256:[0-9a-f]{64}$')"
+      message: "probe image must be digest-pinned"
+    - expression: "object.spec.containers[0].command == ['/cgroupguard', 'probe', '--path', '/host-cgroup'] && !has(object.spec.containers[0].args) && !has(object.spec.containers[0].env) && !has(object.spec.containers[0].envFrom)"
+      message: "probe command is fixed"
+    - expression: "(!has(object.spec.hostNetwork) || object.spec.hostNetwork == false) && (!has(object.spec.hostPID) || object.spec.hostPID == false) && (!has(object.spec.hostIPC) || object.spec.hostIPC == false)"
+      message: "no host namespaces"
+    - expression: "has(object.spec.automountServiceAccountToken) && object.spec.automountServiceAccountToken == false"
+      message: "no service account token"
+    - expression: "has(object.spec.volumes) && object.spec.volumes.size() == 1 && has(object.spec.volumes[0].hostPath) && object.spec.volumes[0].hostPath.path == '/sys/fs/cgroup'"
+      message: "only the read-only cgroup hostPath is allowed"
+    - expression: "object.spec.containers[0].volumeMounts.size() == 1 && object.spec.containers[0].volumeMounts[0].mountPath == '/host-cgroup' && object.spec.containers[0].volumeMounts[0].readOnly == true"
+      message: "cgroup mount must be read-only"
+    - expression: "has(object.spec.containers[0].securityContext) && object.spec.containers[0].securityContext.allowPrivilegeEscalation == false && object.spec.containers[0].securityContext.readOnlyRootFilesystem == true && (!has(object.spec.containers[0].securityContext.privileged) || object.spec.containers[0].securityContext.privileged == false) && object.spec.containers[0].securityContext.capabilities.drop == ['ALL'] && !has(object.spec.containers[0].securityContext.capabilities.add)"
+      message: "container must be unprivileged with all capabilities dropped"
+    - expression: "has(object.spec.securityContext) && object.spec.securityContext.runAsNonRoot == true"
+      message: "probe must run as non-root"
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: cgroupguard-probe-shape
+spec:
+  policyName: cgroupguard-probe-shape
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        cgroupguard.io/probe-namespace: "true"

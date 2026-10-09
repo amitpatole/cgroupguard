@@ -1,0 +1,12 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "cgroupguard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {{- include "cgroupguard.selector" . | nindent 6 }}
+{{- end }}

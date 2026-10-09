@@ -1,0 +1,12 @@
+{{- if .Values.defaultReadiness.enabled }}
+apiVersion: cgroupguard.io/v1alpha1
+kind: CgroupReadiness
+metadata:
+  name: {{ .Values.defaultReadiness.name }}
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+spec:
+  target: {{ .Values.defaultReadiness.target | quote }}
+  intervalSeconds: {{ .Values.defaultReadiness.intervalSeconds }}
+  includeWorkloads: {{ .Values.controller.workloads }}
+  statusDetail: {{ .Values.defaultReadiness.statusDetail }}
+{{- end }}

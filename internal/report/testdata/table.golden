@@ -1,0 +1,56 @@
+Node cgroup readiness: pass
+Workload assessment: review-required
+Cluster upgrade readiness: unknown
+
+NODE          PROVIDER  CGROUP  KUBELET
+example-node  unknown   v2      
+
+CG101 [warning] demo/Deployment/legacy-java/regular/app
+  Evidence: Image-tag heuristic for hotspot (runtime, verified rule): eclipse-temurin:11.0.15-jre
+  Why: Image tag suggests a version below the documented cgroup v2 support threshold 11.0.16; verify the actual binary and vendor backports.
+  Blast radius: scope=workload; unknown pods; unknown nodes; failure=silent-degradation; recoverability=unknown (pdb=unknown, stateful=false); criticality=workload (default; no criticality signal collected); basis=unknown
+  Source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+
+CG102 [warning] demo/DaemonSet/metrics/regular/agent
+  Evidence: Image-tag heuristic for cadvisor (agent, verified rule): gcr.io/cadvisor/cadvisor:v0.42.0
+  Why: Image tag suggests a version below the documented cgroup v2 support threshold 0.43.0; verify the actual binary and vendor backports.
+  Blast radius: scope=workload; unknown pods; unknown nodes; failure=observability-loss; recoverability=unknown (pdb=unknown, stateful=false); criticality=node-wide (controller kind); basis=unknown
+  Source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+
+CG103 [warning] demo/Job/custom-reader/regular/task
+  Evidence: Manifest contains legacy path prefix /sys/fs/cgroup/memory/
+  Why: Direct reads of cgroup v1 controller paths can fail on v2. Inspect the referenced command or mount; the tool does not execute it.
+  Blast radius: scope=workload; unknown pods; unknown nodes; failure=unknown; recoverability=unknown (pdb=unknown, stateful=false); criticality=workload (default; no criticality signal collected); basis=unknown
+  Source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+
+CG104 [warning] demo/Job/custom-reader/regular/task
+  Evidence: Unrecognized image: private.example/custom:1.0.0
+  Why: No verified rule covers this image. Inspect its runtime and custom cgroup access before migration.
+  Blast radius: scope=workload; unknown pods; unknown nodes; failure=unknown; recoverability=unknown (pdb=unknown, stateful=false); criticality=workload (default; no criticality signal collected); basis=unknown
+  Source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+
+CG106 [note] demo/CronJob/node-task/regular/task
+  Evidence: Image-tag heuristic for node (runtime, verified rule): node:20.13.1
+  Why: Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.
+  Blast radius: scope=workload; unknown pods; unknown nodes; failure=silent-degradation; recoverability=unknown (pdb=unknown, stateful=false); criticality=workload (default; no criticality signal collected); basis=unknown
+  Source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+
+CG106 [note] demo/Pod/modern-java/regular/app
+  Evidence: Image-tag heuristic for hotspot (runtime, verified rule): eclipse-temurin:17.0.10-jre
+  Why: Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.
+  Blast radius: scope=workload; unknown pods; unknown nodes; failure=silent-degradation; recoverability=unknown (pdb=unknown, stateful=false); criticality=workload (default; no criticality signal collected); basis=unknown
+  Source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+
+CG106 [note] demo/StatefulSet/dotnet-service/regular/app
+  Evidence: Image-tag heuristic for dotnet (runtime, verified rule): mcr.microsoft.com/dotnet/runtime:8.0.0
+  Why: Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.
+  Blast radius: scope=workload; unknown pods; unknown nodes; failure=silent-degradation; recoverability=unknown (pdb=unknown, stateful=false); criticality=workload (default; no criticality signal collected); basis=unknown
+  Source: https://github.com/dotnet/runtime/issues/30337
+
+Limitation: Offline evidence is user-supplied and is not authenticated or checked for freshness.
+
+Limitation: Workload analysis uses image tags and allowlisted manifest path references; no image layers, runtime binaries, mounted configs or application behavior are inspected.
+
+Limitation: Kubelet configuration, enabled cgroup controllers and other upgrade prerequisites remain unassessed. A clean heuristic scan is not proof of cluster readiness.
+
+Limitation: Offline snapshots are user-supplied, unauthenticated evidence with no freshness guarantee.

@@ -1,0 +1,26 @@
+# Example only. Run with a ServiceAccount bound to the read-only roles in deploy/rbac.yaml and deploy/workload-rbac.yaml.
+# Pin every image by digest in real use.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata: {name: cgroupguard-check}
+spec:
+  params:
+    - {name: version, type: string, description: "cgroupguard version without the v, for example 0.1.0"}
+    - {name: target, type: string, default: "1.35"}
+  workspaces:
+    - {name: ci, description: "workspace holding ci/install-cgroupguard.sh and the Cosign public key"}
+  steps:
+    - name: check
+      image: alpine:3.20
+      workingDir: $(workspaces.ci.path)
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+      env:
+        - {name: VERSION, value: $(params.version)}
+        - {name: TARGET, value: $(params.target)}
+        - {name: BASE_URL, value: "https://github.com/amitpatole/cgroupguard/releases/download"}
+      script: |
+        #!/bin/sh
+        set -eu
+        # An image with bash, curl, tar and cosign is assumed; the installer verifies signature and checksum.
+        PUBKEY=ci/cgroupguard-cosign.pub DEST=/tmp/bin ci/install-cgroupguard.sh
+        /tmp/bin/cgroupguard check --target-version "$TARGET" --exit-error --fail-on warning --format sarif > /tmp/cgroupguard.sarif

@@ -1,0 +1,72 @@
+# The image must be provided: there is no default registry.
+image:
+  repository: ""
+  tag: ""        # defaults to the chart appVersion
+  digest: ""     # preferred in production, for example sha256:...; overrides tag
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+
+replicaCount: 1
+leaderElection: true        # keep true if replicaCount > 1
+
+controller:
+  # Reading workload metadata needs list on pods, deployments, statefulsets, daemonsets, jobs,
+  # cronjobs and poddisruptionbudgets. Turn off for node-only scans.
+  workloads: true
+  # Operator-controlled evidence sources (never selectable through a CgroupReadiness resource):
+  prometheusURL: ""         # reads kubelet_cgroup_version from your Prometheus; needs no extra RBAC
+  nodeEvents: false         # needs list on events (cluster-wide)
+  # Reading kubelet metrics through the API-server node proxy needs get on nodes/proxy, which
+  # reaches every kubelet endpoint. The chart deliberately offers no switch for it: use
+  # prometheusURL instead. If you must, create your own narrowly bound role and pass
+  # extraArgs: ["--kubelet-metrics"]; see docs/optional-permissions.md.
+
+metrics:
+  port: 8080
+  serviceMonitor:
+    enabled: false          # needs the Prometheus Operator CRDs
+    interval: 60s
+    labels: {}
+
+probes:
+  port: 8081
+
+# Ingress to the metrics port is denied unless a source is listed. Example:
+#   metricsAllowFrom:
+#     - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: monitoring}}
+networkPolicy:
+  enabled: true
+  metricsAllowFrom: []
+
+podDisruptionBudget:
+  enabled: false
+
+# Optionally create one CgroupReadiness named "default" (a cluster-scoped resource).
+defaultReadiness:
+  enabled: false
+  name: default
+  target: "1.35"
+  intervalSeconds: 3600
+  statusDetail: summary
+
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 500m, memory: 256Mi}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+priorityClassName: ""
+podAnnotations: {}
+podLabels: {}
+extraArgs: []

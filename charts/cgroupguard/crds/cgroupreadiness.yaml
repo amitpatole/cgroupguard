@@ -1,0 +1,103 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: cgroupreadinesses.cgroupguard.io
+spec:
+  group: cgroupguard.io
+  scope: Cluster
+  names:
+    kind: CgroupReadiness
+    listKind: CgroupReadinessList
+    plural: cgroupreadinesses
+    singular: cgroupreadiness
+    shortNames: [cgr]
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - {name: Target, type: string, jsonPath: .status.target}
+        - {name: NodeReadiness, type: string, jsonPath: .status.nodeReadiness}
+        - {name: V1, type: integer, jsonPath: .status.nodes.cgroupV1}
+        - {name: Unknown, type: integer, jsonPath: .status.nodes.unknown}
+        - {name: High, type: integer, jsonPath: .status.findings.high}
+        - {name: LastScan, type: date, jsonPath: .status.lastScanTime}
+      schema:
+        openAPIV3Schema:
+          type: object
+          description: Scheduled cgroup v1 to v2 readiness scan. It never certifies that a cluster is ready to upgrade.
+          properties:
+            spec:
+              type: object
+              properties:
+                target:
+                  type: string
+                  pattern: '^v?1\.[0-9]{2}(\.[0-9]+)?$'
+                  description: Planned Kubernetes upgrade target, for example 1.35.
+                intervalSeconds:
+                  type: integer
+                  minimum: 300
+                  maximum: 86400
+                  description: Time between scans (default 3600).
+                includeWorkloads:
+                  type: boolean
+                  description: Also scan workload metadata (needs the workload read permissions).
+                workloadNamespace:
+                  type: string
+                  maxLength: 63
+                  pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+                  description: Restrict the workload scan to one namespace.
+                statusDetail:
+                  type: string
+                  enum: [summary, preview]
+                  description: summary shows counts only; preview adds up to 20 finding locations (names of workloads and nodes).
+            status:
+              type: object
+              properties:
+                observedGeneration: {type: integer, format: int64}
+                lastScanTime: {type: string, format: date-time}
+                lastAttemptTime: {type: string, format: date-time}
+                target: {type: string}
+                nodeReadiness: {type: string}
+                workloadReadiness: {type: string}
+                clusterReadiness: {type: string}
+                nodes:
+                  type: object
+                  properties:
+                    total: {type: integer}
+                    cgroupV1: {type: integer}
+                    cgroupV2: {type: integer}
+                    hybrid: {type: integer}
+                    unknown: {type: integer}
+                findings:
+                  type: object
+                  properties:
+                    high: {type: integer}
+                    warning: {type: integer}
+                    note: {type: integer}
+                findingsPreview:
+                  type: array
+                  maxItems: 20
+                  items:
+                    type: object
+                    properties:
+                      rule: {type: string}
+                      severity: {type: string}
+                      resource: {type: string}
+                limitations:
+                  type: array
+                  maxItems: 10
+                  items: {type: string}
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required: [type, status]
+                    properties:
+                      type: {type: string}
+                      status: {type: string}
+                      reason: {type: string}
+                      message: {type: string}
+                      lastTransitionTime: {type: string, format: date-time}

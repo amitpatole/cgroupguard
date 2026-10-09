@@ -1,0 +1,65 @@
+[
+  {
+    "ApiVersion": "CG101",
+    "Kind": "Deployment",
+    "Name": "legacy-java",
+    "Namespace": "demo",
+    "ReplaceWith": "Image tag suggests a version below the documented cgroup v2 support threshold 11.0.16; verify the actual binary and vendor backports.",
+    "RuleSet": "cgroupguard",
+    "Since": "1.35.0"
+  },
+  {
+    "ApiVersion": "CG102",
+    "Kind": "DaemonSet",
+    "Name": "metrics",
+    "Namespace": "demo",
+    "ReplaceWith": "Image tag suggests a version below the documented cgroup v2 support threshold 0.43.0; verify the actual binary and vendor backports.",
+    "RuleSet": "cgroupguard",
+    "Since": "1.35.0"
+  },
+  {
+    "ApiVersion": "CG103",
+    "Kind": "Job",
+    "Name": "custom-reader",
+    "Namespace": "demo",
+    "ReplaceWith": "Direct reads of cgroup v1 controller paths can fail on v2. Inspect the referenced command or mount; the tool does not execute it.",
+    "RuleSet": "cgroupguard",
+    "Since": "1.35.0"
+  },
+  {
+    "ApiVersion": "CG104",
+    "Kind": "Job",
+    "Name": "custom-reader",
+    "Namespace": "demo",
+    "ReplaceWith": "No verified rule covers this image. Inspect its runtime and custom cgroup access before migration.",
+    "RuleSet": "cgroupguard",
+    "Since": "1.35.0"
+  },
+  {
+    "ApiVersion": "CG106",
+    "Kind": "CronJob",
+    "Name": "node-task",
+    "Namespace": "demo",
+    "ReplaceWith": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.",
+    "RuleSet": "cgroupguard",
+    "Since": "1.35.0"
+  },
+  {
+    "ApiVersion": "CG106",
+    "Kind": "Pod",
+    "Name": "modern-java",
+    "Namespace": "demo",
+    "ReplaceWith": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.",
+    "RuleSet": "cgroupguard",
+    "Since": "1.35.0"
+  },
+  {
+    "ApiVersion": "CG106",
+    "Kind": "StatefulSet",
+    "Name": "dotnet-service",
+    "Namespace": "demo",
+    "ReplaceWith": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.",
+    "RuleSet": "cgroupguard",
+    "Since": "1.35.0"
+  }
+]

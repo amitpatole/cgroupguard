@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "nodes": [{"name":"example-node","os":"linux","provider":"unknown","cgroup":"v2","evidence":"EXAMPLE ONLY: statfs cgroup2fs"}],
+  "workloads": [
+    {"namespace":"demo","kind":"Deployment","name":"legacy-java","container":"app","containerType":"regular","image":"eclipse-temurin:11.0.15-jre"},
+    {"namespace":"demo","kind":"DaemonSet","name":"metrics","container":"agent","containerType":"regular","image":"gcr.io/cadvisor/cadvisor:v0.42.0"},
+    {"namespace":"demo","kind":"Job","name":"custom-reader","container":"task","containerType":"regular","image":"private.example/custom:1.0.0","pathSignals":["/sys/fs/cgroup/memory/"]},
+    {"namespace":"demo","kind":"Pod","name":"modern-java","container":"app","containerType":"regular","image":"eclipse-temurin:17.0.10-jre"},
+    {"namespace":"demo","kind":"CronJob","name":"node-task","container":"task","containerType":"regular","image":"node:20.13.1"},
+    {"namespace":"demo","kind":"StatefulSet","name":"dotnet-service","container":"app","containerType":"regular","image":"mcr.microsoft.com/dotnet/runtime:8.0.0"}
+  ]
+}

@@ -1,0 +1,253 @@
+# Runtime-family rules. status: verified means every threshold/claim is stated by
+# the cited primary source; unverified families may only produce review or info
+# findings and never a pass or a version threshold.
+version: 2
+families:
+  - family: hotspot
+    class: runtime
+    status: verified
+    mode: threshold
+    scheme: java
+    riskId: CG101
+    failureMode: silent-degradation
+    repositories: [docker.io/library/openjdk, docker.io/library/eclipse-temurin]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    minimums:
+      "8": "8.372.0"
+      "11": "11.0.16"
+      "15": "15.0.0"
+  - family: cadvisor
+    class: agent
+    status: verified
+    mode: threshold
+    riskId: CG102
+    failureMode: observability-loss
+    repositories: [gcr.io/cadvisor/cadvisor, ghcr.io/google/cadvisor, docker.io/google/cadvisor]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    minimums:
+      all: "0.43.0"
+  - family: node
+    class: runtime
+    status: verified
+    mode: threshold
+    riskId: CG108
+    failureMode: silent-degradation
+    repositories: [docker.io/library/node]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Node.js reads cgroup v2 memory limits (via libuv) from v20.3.0; the v18 line does not reliably detect them.
+    minimums:
+      all: "20.3.0"
+  - family: go
+    class: runtime
+    status: verified
+    mode: native-from
+    nativeFrom: "1.25"
+    failureMode: silent-degradation
+    repositories: [docker.io/library/golang]
+    source: https://go.dev/doc/go1.25
+    note: Go 1.25+ sets GOMAXPROCS from the cgroup CPU bandwidth limit. Older toolchains need uber-go/automaxprocs v1.5.1 or newer (cannot be seen from an image tag). Memory limits (GOMEMLIMIT) are never set automatically.
+  - family: zulu
+    class: runtime
+    status: verified
+    mode: threshold
+    scheme: java
+    riskId: CG101
+    failureMode: silent-degradation
+    repositories: [docker.io/azul/zulu-openjdk, docker.io/azul/zulu-openjdk-alpine, docker.io/azul/zulu-openjdk-debian, docker.io/azul/zulu-openjdk-centos]
+    source: https://docs.azul.com/core/release/april-2023/release-notes
+    note: Azul Zulu release notes list JDK-8230305 (cgroups v2 container awareness) in Zulu 8.70.0.23 (8u372-b05); Zulu tags lead with the upstream JDK version. The azul/zulu-openjdk repository is announced for retirement by the vendor.
+    minimums:
+      "8": "8.372.0"
+      "11": "11.0.16"
+      "15": "15.0.0"
+  - family: liberica
+    class: runtime
+    status: verified
+    mode: threshold
+    scheme: java
+    riskId: CG101
+    failureMode: silent-degradation
+    repositories: [docker.io/bellsoft/liberica-openjdk-debian, docker.io/bellsoft/liberica-openjdk-alpine, docker.io/bellsoft/liberica-openjdk-centos, docker.io/bellsoft/liberica-openjdk-alpine-musl]
+    source: https://docs.bell-sw.com/liberica-jdk/11.0.16b8/general/release-notes/
+    note: BellSoft Liberica release notes list JDK-8230305 (cgroups v2 container awareness) in 11.0.16+8 and 8u372+7.
+    minimums:
+      "8": "8.372.0"
+      "11": "11.0.16"
+      "15": "15.0.0"
+  - family: fluent-bit
+    class: agent
+    status: verified
+    mode: threshold
+    riskId: CG110
+    failureMode: observability-loss
+    repositories: [docker.io/fluent/fluent-bit, cr.fluentbit.io/fluent/fluent-bit]
+    source: https://fluentbit.io/blog/2023/11/16/meet-fluent-bit-v2.2/
+    note: Fluent Bit 2.2 added cgroups v2 support for Docker containers (Podman had it earlier). This matters only if the docker input is used; tail-based Kubernetes log collection does not read cgroup files.
+    minimums:
+      all: "2.2.0"
+  - family: elastic-beats
+    class: agent
+    status: verified
+    mode: threshold
+    riskId: CG110
+    failureMode: observability-loss
+    repositories: [docker.elastic.co/beats/metricbeat, docker.elastic.co/beats/filebeat, docker.elastic.co/beats/auditbeat, docker.elastic.co/beats/packetbeat, docker.elastic.co/beats/heartbeat]
+    source: https://www.elastic.co/guide/en/beats/libbeat/7.15/release-notes-7.15.0.html
+    note: Beats 7.15.0 release notes list "Add cgroups V2 support" under Affecting all Beats. Module-level (docker, kubernetes) coverage was not verified.
+    minimums:
+      all: "7.15.0"
+  - family: ibm-semeru
+    class: runtime
+    status: verified
+    mode: review
+    failureMode: silent-degradation
+    repositories: [docker.io/library/ibm-semeru-runtimes, icr.io/ibm/ibm-semeru-runtimes, docker.io/library/ibmjava]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Documented cgroup v2 support starts at IBM Semeru Runtimes 8.0.382.0, 11.0.20.0 and 17.0.8.0, and IBM Java 8.0.8.6. Image tags do not reliably carry these build numbers; verify the installed build.
+  - family: jvm-vendor
+    class: runtime
+    status: unverified
+    mode: review
+    failureMode: silent-degradation
+    repositories: [docker.io/library/amazoncorretto, docker.io/library/sapmachine, mcr.microsoft.com/openjdk/jdk]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: JVM vendor build. OpenJDK baselines are 8u372, 11.0.16 and 15+. Corretto 8 imports jdk8u372-b07 and SapMachine 11.0.16 follows upstream, but neither vendor states cgroup v2 support explicitly, and Microsoft Build of OpenJDK images carry major-only tags that cannot establish a version. No threshold is encoded.
+  - family: dotnet
+    class: runtime
+    status: verified
+    mode: threshold
+    riskId: CG109
+    failureMode: silent-degradation
+    repositories: [mcr.microsoft.com/dotnet/runtime, mcr.microsoft.com/dotnet/aspnet, mcr.microsoft.com/dotnet/sdk]
+    source: https://github.com/dotnet/runtime/issues/30337
+    note: cgroup v2 support was added to .NET in the 5.0 milestone (dotnet/runtime#30337). .NET Core 3.1 and earlier have no Microsoft cgroup v2 support that could be verified (only downstream distro patches). Servicing builds inside a line were not individually verified.
+    minimums:
+      all: "5.0.0"
+  - family: python
+    class: runtime
+    status: unverified
+    mode: info
+    failureMode: silent-degradation
+    repositories: [docker.io/library/python, docker.io/library/pypy]
+    source: https://github.com/python/cpython/issues/109595
+    note: No cgroup v1 path dependency is verified for the interpreter. os.cpu_count() does not follow cgroup CPU quotas on either cgroup version; check libraries that size worker pools from it.
+  - family: rust
+    class: runtime
+    status: unverified
+    mode: info
+    failureMode: unknown
+    repositories: [docker.io/library/rust]
+    source: https://doc.rust-lang.org/stable/std/thread/fn.available_parallelism.html
+    note: Rust std available_parallelism reads cgroup quotas; third-party crates may carry their own cgroup code (not assessed).
+  - family: beam
+    class: runtime
+    status: unverified
+    mode: info
+    failureMode: unknown
+    repositories: [docker.io/library/erlang, docker.io/library/elixir]
+    source: https://elixirforum.com/t/performance-of-erlang-elixir-in-docker-kubernetes/21493
+    note: Unverified. Community reports say OTP 23+ honors the cgroup CPU quota; no cgroup version difference was verified.
+  - family: datadog-agent
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [gcr.io/datadoghq/agent, docker.io/datadog/agent, public.ecr.aws/datadog/agent]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Datadog Agent. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor. Release notes mention cgroup v2 features from 7.45.0 but no first-support statement was found.
+  - family: falco
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/falcosecurity/falco, docker.io/falcosecurity/falco-no-driver]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Falco. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: node-exporter
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/prom/node-exporter, quay.io/prometheus/node-exporter]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Prometheus node_exporter. Its cgroup relevance was not verified. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: telegraf
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/library/telegraf]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Telegraf. A reported issue says the cgroup input plugin cannot parse some cgroup v2 files (influxdata/telegraf#16473); the docker input uses the Docker API. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: otel-collector
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/otel/opentelemetry-collector-contrib, ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: OpenTelemetry Collector. Receivers that read cgroup data were not verified. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: splunk-otel
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/signalfx/splunk-otel-collector, quay.io/signalfx/splunk-otel-collector]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Splunk OpenTelemetry Collector. Vendor documentation reportedly describes its cgroups monitor as cgroups v1 only (not fetched). Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: grafana-agents
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/grafana/alloy, docker.io/grafana/agent, docker.io/grafana/promtail]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Grafana Alloy/Agent/Promtail. A cAdvisor-integration cgroup v2 detection error was reported (grafana/alloy#486). Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: sysdig-agent
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/sysdig/agent, docker.io/sysdig/agent-slim]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Sysdig agent. Release notes mention cgroup v2 support in 12.16.0, but earlier notes were not fully read. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: newrelic-infra
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/newrelic/infrastructure, docker.io/newrelic/infrastructure-bundle]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: New Relic infrastructure agent. nri-docker 1.7.0 added cgroups v2; the infrastructure agent version mapping and the cgroupns=host requirement were not verified. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: dynatrace-oneagent
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.io/dynatrace/oneagent]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Dynatrace OneAgent. Container support for cgroup v2 reportedly starts around OneAgent 1.243 (not verified from a fetched page). Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: elastic-agent
+    class: agent
+    status: unverified
+    mode: review
+    failureMode: observability-loss
+    repositories: [docker.elastic.co/elastic-agent/elastic-agent]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Elastic Agent embeds Beats; Beats 7.15.0 added cgroups v2, but the Elastic Agent version mapping was not verified. Kubernetes states that agents depending on the cgroup filesystem must be updated to versions that support cgroup v2. No minimum version could be verified from a primary source; confirm with the vendor.
+  - family: kubernetes-core
+    class: platform
+    status: unverified
+    mode: info
+    failureMode: unknown
+    repositories: [registry.k8s.io/kube-apiserver, registry.k8s.io/kube-controller-manager, registry.k8s.io/kube-scheduler, registry.k8s.io/kube-proxy, registry.k8s.io/etcd, registry.k8s.io/coredns/coredns, registry.k8s.io/pause]
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+    note: Kubernetes control-plane or core add-on image. It is upgraded together with the cluster; its cgroup use was not assessed.
+  - family: kind-addon
+    class: platform
+    status: unverified
+    mode: info
+    failureMode: unknown
+    repositories: [docker.io/kindest/kindnetd, docker.io/kindest/local-path-provisioner, docker.io/kindest/local-path-helper]
+    source: https://kind.sigs.k8s.io/
+    note: kind test-cluster add-on image; not a production workload.

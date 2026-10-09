@@ -1,0 +1,16 @@
+cgroupguard controller installed in {{ .Release.Namespace }}.
+
+Create a scan (cluster-scoped):
+  kubectl apply -f - <<YAML
+  apiVersion: cgroupguard.io/v1alpha1
+  kind: CgroupReadiness
+  metadata: {name: default}
+  spec: {target: "1.35", intervalSeconds: 3600}
+  YAML
+  kubectl get cgroupreadinesses
+
+Metrics (port {{ .Values.metrics.port }}) are reachable only from sources listed in networkPolicy.metricsAllowFrom.
+{{- if not .Values.controller.prometheusURL }}
+Without controller.prometheusURL (or nodeEvents) node cgroup modes stay "unknown": the node API alone cannot show them.
+{{- end }}
+A scan result is never an upgrade certification.

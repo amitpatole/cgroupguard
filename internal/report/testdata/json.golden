@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 2,
+  "target": "1.35",
+  "scope": "nodes-and-workload-metadata",
+  "nodeReadiness": "pass",
+  "clusterReadiness": "unknown",
+  "limitations": [
+    "Offline evidence is user-supplied and is not authenticated or checked for freshness.",
+    "Workload analysis uses image tags and allowlisted manifest path references; no image layers, runtime binaries, mounted configs or application behavior are inspected.",
+    "Kubelet configuration, enabled cgroup controllers and other upgrade prerequisites remain unassessed. A clean heuristic scan is not proof of cluster readiness.",
+    "Offline snapshots are user-supplied, unauthenticated evidence with no freshness guarantee."
+  ],
+  "nodes": [
+    {
+      "name": "example-node",
+      "os": "linux",
+      "provider": "unknown",
+      "cgroup": "v2",
+      "evidence": "EXAMPLE ONLY: statfs cgroup2fs"
+    }
+  ],
+  "findings": [
+    {
+      "ruleId": "CG101",
+      "node": "",
+      "resource": "demo/Deployment/legacy-java/regular/app",
+      "severity": "warning",
+      "evidence": "Image-tag heuristic for hotspot (runtime, verified rule): eclipse-temurin:11.0.15-jre",
+      "why": "Image tag suggests a version below the documented cgroup v2 support threshold 11.0.16; verify the actual binary and vendor backports.",
+      "blastRadius": {
+        "scope": "workload",
+        "totalNodes": 1,
+        "namespaces": [
+          "demo"
+        ],
+        "failureMode": "silent-degradation",
+        "recoverability": {
+          "rating": "unknown",
+          "pdb": "unknown",
+          "stateful": false
+        },
+        "criticality": "workload",
+        "criticalityBasis": "default; no criticality signal collected",
+        "basis": "unknown"
+      },
+      "confidence": "low",
+      "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+    },
+    {
+      "ruleId": "CG102",
+      "node": "",
+      "resource": "demo/DaemonSet/metrics/regular/agent",
+      "severity": "warning",
+      "evidence": "Image-tag heuristic for cadvisor (agent, verified rule): gcr.io/cadvisor/cadvisor:v0.42.0",
+      "why": "Image tag suggests a version below the documented cgroup v2 support threshold 0.43.0; verify the actual binary and vendor backports.",
+      "blastRadius": {
+        "scope": "workload",
+        "totalNodes": 1,
+        "namespaces": [
+          "demo"
+        ],
+        "failureMode": "observability-loss",
+        "recoverability": {
+          "rating": "unknown",
+          "pdb": "unknown",
+          "stateful": false
+        },
+        "criticality": "node-wide",
+        "criticalityBasis": "controller kind",
+        "basis": "unknown"
+      },
+      "confidence": "low",
+      "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+    },
+    {
+      "ruleId": "CG103",
+      "node": "",
+      "resource": "demo/Job/custom-reader/regular/task",
+      "severity": "warning",
+      "evidence": "Manifest contains legacy path prefix /sys/fs/cgroup/memory/",
+      "why": "Direct reads of cgroup v1 controller paths can fail on v2. Inspect the referenced command or mount; the tool does not execute it.",
+      "blastRadius": {
+        "scope": "workload",
+        "totalNodes": 1,
+        "namespaces": [
+          "demo"
+        ],
+        "failureMode": "unknown",
+        "recoverability": {
+          "rating": "unknown",
+          "pdb": "unknown",
+          "stateful": false
+        },
+        "criticality": "workload",
+        "criticalityBasis": "default; no criticality signal collected",
+        "basis": "unknown"
+      },
+      "confidence": "high",
+      "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+    },
+    {
+      "ruleId": "CG104",
+      "node": "",
+      "resource": "demo/Job/custom-reader/regular/task",
+      "severity": "warning",
+      "evidence": "Unrecognized image: private.example/custom:1.0.0",
+      "why": "No verified rule covers this image. Inspect its runtime and custom cgroup access before migration.",
+      "blastRadius": {
+        "scope": "workload",
+        "totalNodes": 1,
+        "namespaces": [
+          "demo"
+        ],
+        "failureMode": "unknown",
+        "recoverability": {
+          "rating": "unknown",
+          "pdb": "unknown",
+          "stateful": false
+        },
+        "criticality": "workload",
+        "criticalityBasis": "default; no criticality signal collected",
+        "basis": "unknown"
+      },
+      "confidence": "unknown",
+      "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+    },
+    {
+      "ruleId": "CG106",
+      "node": "",
+      "resource": "demo/CronJob/node-task/regular/task",
+      "severity": "note",
+      "evidence": "Image-tag heuristic for node (runtime, verified rule): node:20.13.1",
+      "why": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.",
+      "blastRadius": {
+        "scope": "workload",
+        "totalNodes": 1,
+        "namespaces": [
+          "demo"
+        ],
+        "failureMode": "silent-degradation",
+        "recoverability": {
+          "rating": "unknown",
+          "pdb": "unknown",
+          "stateful": false
+        },
+        "criticality": "workload",
+        "criticalityBasis": "default; no criticality signal collected",
+        "basis": "unknown"
+      },
+      "confidence": "low",
+      "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+    },
+    {
+      "ruleId": "CG106",
+      "node": "",
+      "resource": "demo/Pod/modern-java/regular/app",
+      "severity": "note",
+      "evidence": "Image-tag heuristic for hotspot (runtime, verified rule): eclipse-temurin:17.0.10-jre",
+      "why": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.",
+      "blastRadius": {
+        "scope": "workload",
+        "totalNodes": 1,
+        "namespaces": [
+          "demo"
+        ],
+        "failureMode": "silent-degradation",
+        "recoverability": {
+          "rating": "unknown",
+          "pdb": "unknown",
+          "stateful": false
+        },
+        "criticality": "workload",
+        "criticalityBasis": "default; no criticality signal collected",
+        "basis": "unknown"
+      },
+      "confidence": "low",
+      "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+    },
+    {
+      "ruleId": "CG106",
+      "node": "",
+      "resource": "demo/StatefulSet/dotnet-service/regular/app",
+      "severity": "note",
+      "evidence": "Image-tag heuristic for dotnet (runtime, verified rule): mcr.microsoft.com/dotnet/runtime:8.0.0",
+      "why": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility.",
+      "blastRadius": {
+        "scope": "workload",
+        "totalNodes": 1,
+        "namespaces": [
+          "demo"
+        ],
+        "failureMode": "silent-degradation",
+        "recoverability": {
+          "rating": "unknown",
+          "pdb": "unknown",
+          "stateful": false
+        },
+        "criticality": "workload",
+        "criticalityBasis": "default; no criticality signal collected",
+        "basis": "unknown"
+      },
+      "confidence": "low",
+      "source": "https://github.com/dotnet/runtime/issues/30337"
+    }
+  ],
+  "workloads": [
+    {
+      "namespace": "demo",
+      "kind": "CronJob",
+      "name": "node-task",
+      "container": "task",
+      "containerType": "regular",
+      "image": "node:20.13.1"
+    },
+    {
+      "namespace": "demo",
+      "kind": "DaemonSet",
+      "name": "metrics",
+      "container": "agent",
+      "containerType": "regular",
+      "image": "gcr.io/cadvisor/cadvisor:v0.42.0"
+    },
+    {
+      "namespace": "demo",
+      "kind": "Deployment",
+      "name": "legacy-java",
+      "container": "app",
+      "containerType": "regular",
+      "image": "eclipse-temurin:11.0.15-jre"
+    },
+    {
+      "namespace": "demo",
+      "kind": "Job",
+      "name": "custom-reader",
+      "container": "task",
+      "containerType": "regular",
+      "image": "private.example/custom:1.0.0",
+      "pathSignals": [
+        "/sys/fs/cgroup/memory/"
+      ]
+    },
+    {
+      "namespace": "demo",
+      "kind": "Pod",
+      "name": "modern-java",
+      "container": "app",
+      "containerType": "regular",
+      "image": "eclipse-temurin:17.0.10-jre"
+    },
+    {
+      "namespace": "demo",
+      "kind": "StatefulSet",
+      "name": "dotnet-service",
+      "container": "app",
+      "containerType": "regular",
+      "image": "mcr.microsoft.com/dotnet/runtime:8.0.0"
+    }
+  ],
+  "workloadReadiness": "review-required"
+}

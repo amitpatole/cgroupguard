@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {"name":"worker-legacy","os":"linux","provider":"eks","kubelet":"v1.34.1","cgroup":"v1","evidence":"EXAMPLE ONLY: tmpfs root with cgroup v1 controller mounts"},
+    {"name":"worker-modern","os":"linux","provider":"gke","kubelet":"v1.34.1","cgroup":"v2","evidence":"EXAMPLE ONLY: statfs cgroup2fs"},
+    {"name":"worker-unprobed","os":"linux","provider":"aks","cgroup":"unknown","evidence":"EXAMPLE ONLY: node inventory; probe not requested"}
+  ]
+}

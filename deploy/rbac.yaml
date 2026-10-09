@@ -1,0 +1,23 @@
+# Review and bind these roles to your own identity. No binding is created here.
+# Read-only inventory only. Optional features that need stronger permissions
+# (node probe pods, kubelet metrics through the API-server node proxy) are NOT
+# shipped as ready-made roles; see docs/optional-permissions.md for what they need,
+# why they are risky, and the mandatory guardrail policy.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cgroupguard-inventory
+rules:
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [list]
+---
+# OPTIONAL, for --node-events: read-only list of Events (all namespaces).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cgroupguard-node-events
+rules:
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [list]

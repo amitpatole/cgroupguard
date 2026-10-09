@@ -1,0 +1,111 @@
+# Every permission below is needed by one feature and is granted only when that feature is on.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "cgroupguard.fullname" . }}
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+rules:
+  # Node inventory (OS, kernel, kubelet version, labels).
+  - apiGroups: [""]
+    resources: [nodes]
+    verbs: [list]
+  # Our own resource, and its status (the only thing the controller writes).
+  - apiGroups: [cgroupguard.io]
+    resources: [cgroupreadinesses]
+    verbs: [get, list, watch]
+  - apiGroups: [cgroupguard.io]
+    resources: [cgroupreadinesses/status]
+    verbs: [get, update, patch]
+{{- if .Values.controller.workloads }}
+  # Workload metadata scan: no Secrets, no ConfigMaps, no pod logs, no exec.
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+  - apiGroups: [apps]
+    resources: [deployments, statefulsets, daemonsets]
+    verbs: [list]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [list]
+  - apiGroups: [policy]
+    resources: [poddisruptionbudgets]
+    verbs: [list]
+{{- end }}
+{{- if .Values.controller.nodeEvents }}
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [list]
+{{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "cgroupguard.fullname" . }}
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "cgroupguard.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cgroupguard.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+---
+# Events for a cluster-scoped resource are recorded in the "default" namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "cgroupguard.fullname" . }}-events
+  namespace: default
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [events.k8s.io]
+    resources: [events]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cgroupguard.fullname" . }}-events
+  namespace: default
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "cgroupguard.fullname" . }}-events
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cgroupguard.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+{{- if .Values.leaderElection }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "cgroupguard.fullname" . }}-leader
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch]
+  # Leader election announces changes of leadership as core Events in this namespace.
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cgroupguard.fullname" . }}-leader
+  namespace: {{ .Release.Namespace }}
+  labels: {{- include "cgroupguard.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "cgroupguard.fullname" . }}-leader
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cgroupguard.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

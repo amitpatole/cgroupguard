@@ -1,0 +1,21 @@
+version: 1
+rules:
+  - id: CG001
+    match: v1
+    severity: high
+    since: "1.35"
+    earlierSeverity: warning
+    why: Kubernetes 1.35 defaults to rejecting cgroup v1 nodes. Migrate before upgrading; provider policies may disallow temporary overrides.
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+  - id: CG002
+    match: hybrid
+    severity: high
+    since: "1.35"
+    earlierSeverity: warning
+    why: Mixed v1 and v2 mounts are not a unified cgroup v2 setup. Verify the hierarchy used by kubelet and migrate to unified v2.
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/
+  - id: CG003
+    match: unknown
+    severity: warning
+    why: Node cgroup mode was not established. OS image, kernel and Kubernetes version alone cannot prove readiness.
+    source: https://kubernetes.io/docs/concepts/architecture/cgroups/

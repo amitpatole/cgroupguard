@@ -1,0 +1,28 @@
+// Example only. Scripted verification fails the build closed; the exit code 200 means findings at or above --fail-on.
+pipeline {
+  agent any
+  environment {
+    CGROUPGUARD_VERSION = '0.1.0'
+    BASE_URL = 'https://github.com/amitpatole/cgroupguard/releases/download'
+  }
+  stages {
+    stage('Install verified cgroupguard') {
+      steps {
+        sh '''
+          VERSION="$CGROUPGUARD_VERSION" BASE_URL="$BASE_URL" PUBKEY=ci/cgroupguard-cosign.pub DEST="$WORKSPACE/bin" ci/install-cgroupguard.sh
+        '''
+      }
+    }
+    stage('Upgrade readiness') {
+      steps {
+        withKubeConfig([credentialsId: 'readonly-kubeconfig']) {      // a read-only identity: see deploy/rbac.yaml
+          sh '''
+            export PATH="$WORKSPACE/bin:$PATH"
+            cgroupguard check --target-version 1.35 --exit-error --fail-on warning --format sarif > cgroupguard.sarif
+          '''
+        }
+      }
+    }
+  }
+  post { always { archiveArtifacts artifacts: 'cgroupguard.sarif', allowEmptyArchive: true } }
+}

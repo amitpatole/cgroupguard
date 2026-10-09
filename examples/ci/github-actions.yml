@@ -1,0 +1,21 @@
+# Example only. Pin every action to a full commit SHA in real use. cgroupguard is installed by the
+# amitpatole/cgroupguard-action (verifies the Cosign signature and checksum, fails closed); install and
+# verify kubent and pluto from their own release pages.
+name: kubernetes-upgrade-gate
+on: [workflow_dispatch]
+permissions:
+  contents: read
+  security-events: write   # only for the SARIF upload step
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4   # pin to a SHA
+      # ... install and verify kubent, pluto, cgroupguard; configure kubeconfig with a
+      # read-only identity (deploy/rbac.yaml, deploy/workload-rbac.yaml) ...
+      - name: Run the three checks
+        run: TARGET=1.35 OUT=reports examples/ci/upgrade-gate.sh
+      - name: Upload cgroupguard SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3   # pin to a SHA
+        with: { sarif_file: reports/cgroupguard.sarif }

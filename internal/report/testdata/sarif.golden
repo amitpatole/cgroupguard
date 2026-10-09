@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "toolExecutionNotifications": [
+            {
+              "level": "warning",
+              "message": {
+                "text": "Cluster readiness remains unknown: incomplete or heuristic coverage. A report with zero findings is not a passing upgrade certification."
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "clusterReadiness": "unknown",
+        "limitations": [
+          "Offline evidence is user-supplied and is not authenticated or checked for freshness.",
+          "Workload analysis uses image tags and allowlisted manifest path references; no image layers, runtime binaries, mounted configs or application behavior are inspected.",
+          "Kubelet configuration, enabled cgroup controllers and other upgrade prerequisites remain unassessed. A clean heuristic scan is not proof of cluster readiness.",
+          "Offline snapshots are user-supplied, unauthenticated evidence with no freshness guarantee."
+        ],
+        "nodeReadiness": "pass",
+        "scope": "nodes-and-workload-metadata",
+        "target": "1.35",
+        "workloadReadiness": "review-required"
+      },
+      "results": [
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "demo/Deployment/legacy-java/regular/app",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Image tag suggests a version below the documented cgroup v2 support threshold 11.0.16; verify the actual binary and vendor backports. Evidence: Image-tag heuristic for hotspot (runtime, verified rule): eclipse-temurin:11.0.15-jre"
+          },
+          "partialFingerprints": {
+            "cgroupguard/v1": "74ed52a3626a19d272f87d1335949b7455a8d6bd859b9d2e3861a31f58889d2f"
+          },
+          "properties": {
+            "blastRadius": {
+              "scope": "workload",
+              "totalNodes": 1,
+              "namespaces": [
+                "demo"
+              ],
+              "failureMode": "silent-degradation",
+              "recoverability": {
+                "rating": "unknown",
+                "pdb": "unknown",
+                "stateful": false
+              },
+              "criticality": "workload",
+              "criticalityBasis": "default; no criticality signal collected",
+              "basis": "unknown"
+            },
+            "confidence": "low",
+            "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          },
+          "ruleId": "CG101",
+          "ruleIndex": 0
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "demo/DaemonSet/metrics/regular/agent",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Image tag suggests a version below the documented cgroup v2 support threshold 0.43.0; verify the actual binary and vendor backports. Evidence: Image-tag heuristic for cadvisor (agent, verified rule): gcr.io/cadvisor/cadvisor:v0.42.0"
+          },
+          "partialFingerprints": {
+            "cgroupguard/v1": "9c2fee3b4b96c550ebd7c23a56c752ba6bb88195c503d67858aa29f49c4726da"
+          },
+          "properties": {
+            "blastRadius": {
+              "scope": "workload",
+              "totalNodes": 1,
+              "namespaces": [
+                "demo"
+              ],
+              "failureMode": "observability-loss",
+              "recoverability": {
+                "rating": "unknown",
+                "pdb": "unknown",
+                "stateful": false
+              },
+              "criticality": "node-wide",
+              "criticalityBasis": "controller kind",
+              "basis": "unknown"
+            },
+            "confidence": "low",
+            "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          },
+          "ruleId": "CG102",
+          "ruleIndex": 1
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "demo/Job/custom-reader/regular/task",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Direct reads of cgroup v1 controller paths can fail on v2. Inspect the referenced command or mount; the tool does not execute it. Evidence: Manifest contains legacy path prefix /sys/fs/cgroup/memory/"
+          },
+          "partialFingerprints": {
+            "cgroupguard/v1": "2ce8b1460182b79111d6e584faf00284a8fe289b78ed87f8cd5044d0351a1c55"
+          },
+          "properties": {
+            "blastRadius": {
+              "scope": "workload",
+              "totalNodes": 1,
+              "namespaces": [
+                "demo"
+              ],
+              "failureMode": "unknown",
+              "recoverability": {
+                "rating": "unknown",
+                "pdb": "unknown",
+                "stateful": false
+              },
+              "criticality": "workload",
+              "criticalityBasis": "default; no criticality signal collected",
+              "basis": "unknown"
+            },
+            "confidence": "high",
+            "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          },
+          "ruleId": "CG103",
+          "ruleIndex": 2
+        },
+        {
+          "level": "warning",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "demo/Job/custom-reader/regular/task",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "No verified rule covers this image. Inspect its runtime and custom cgroup access before migration. Evidence: Unrecognized image: private.example/custom:1.0.0"
+          },
+          "partialFingerprints": {
+            "cgroupguard/v1": "d81eaad709116bd3426b59f864d70b99ace9655b0cac712062731c3d967d8bd1"
+          },
+          "properties": {
+            "blastRadius": {
+              "scope": "workload",
+              "totalNodes": 1,
+              "namespaces": [
+                "demo"
+              ],
+              "failureMode": "unknown",
+              "recoverability": {
+                "rating": "unknown",
+                "pdb": "unknown",
+                "stateful": false
+              },
+              "criticality": "workload",
+              "criticalityBasis": "default; no criticality signal collected",
+              "basis": "unknown"
+            },
+            "confidence": "unknown",
+            "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          },
+          "ruleId": "CG104",
+          "ruleIndex": 3
+        },
+        {
+          "level": "note",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "demo/CronJob/node-task/regular/task",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility. Evidence: Image-tag heuristic for node (runtime, verified rule): node:20.13.1"
+          },
+          "partialFingerprints": {
+            "cgroupguard/v1": "bfb97e06cf2d3e41ef6f15a58a13dddba3ac97e2334e9037c7a28950869908a7"
+          },
+          "properties": {
+            "blastRadius": {
+              "scope": "workload",
+              "totalNodes": 1,
+              "namespaces": [
+                "demo"
+              ],
+              "failureMode": "silent-degradation",
+              "recoverability": {
+                "rating": "unknown",
+                "pdb": "unknown",
+                "stateful": false
+              },
+              "criticality": "workload",
+              "criticalityBasis": "default; no criticality signal collected",
+              "basis": "unknown"
+            },
+            "confidence": "low",
+            "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          },
+          "ruleId": "CG106",
+          "ruleIndex": 4
+        },
+        {
+          "level": "note",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "demo/Pod/modern-java/regular/app",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility. Evidence: Image-tag heuristic for hotspot (runtime, verified rule): eclipse-temurin:17.0.10-jre"
+          },
+          "partialFingerprints": {
+            "cgroupguard/v1": "e39b6e6d1068291be2105a3cafbd7ef16484da73b0fb2b7a7d98d8bc0c3fe4a2"
+          },
+          "properties": {
+            "blastRadius": {
+              "scope": "workload",
+              "totalNodes": 1,
+              "namespaces": [
+                "demo"
+              ],
+              "failureMode": "silent-degradation",
+              "recoverability": {
+                "rating": "unknown",
+                "pdb": "unknown",
+                "stateful": false
+              },
+              "criticality": "workload",
+              "criticalityBasis": "default; no criticality signal collected",
+              "basis": "unknown"
+            },
+            "confidence": "low",
+            "source": "https://kubernetes.io/docs/concepts/architecture/cgroups/"
+          },
+          "ruleId": "CG106",
+          "ruleIndex": 4
+        },
+        {
+          "level": "note",
+          "locations": [
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "demo/StatefulSet/dotnet-service/regular/app",
+                  "kind": "resource"
+                }
+              ]
+            }
+          ],
+          "message": {
+            "text": "Tag meets the documented baseline, but an image tag alone cannot prove workload compatibility. Evidence: Image-tag heuristic for dotnet (runtime, verified rule): mcr.microsoft.com/dotnet/runtime:8.0.0"
+          },
+          "partialFingerprints": {
+            "cgroupguard/v1": "d9c9da97888b3df920f691e8954e2b151eba04d2ce9e24839758e94c4ff048b1"
+          },
+          "properties": {
+            "blastRadius": {
+              "scope": "workload",
+              "totalNodes": 1,
+              "namespaces": [
+                "demo"
+              ],
+              "failureMode": "silent-degradation",
+              "recoverability": {
+                "rating": "unknown",
+                "pdb": "unknown",
+                "stateful": false
+              },
+              "criticality": "workload",
+              "criticalityBasis": "default; no criticality signal collected",
+              "basis": "unknown"
+            },
+            "confidence": "low",
+            "source": "https://github.com/dotnet/runtime/issues/30337"
+          },
+          "ruleId": "CG106",
+          "ruleIndex": 4
+        }
+      ],
+      "tool": {
+        "driver": {
+          "name": "cgroupguard",
+          "rules": [
+            {
+              "helpUri": "https://kubernetes.io/docs/concepts/architecture/cgroups/",
+              "id": "CG101",
+              "shortDescription": {
+                "text": "Cgroup readiness: CG101"
+              }
+            },
+            {
+              "helpUri": "https://kubernetes.io/docs/concepts/architecture/cgroups/",
+              "id": "CG102",
+              "shortDescription": {
+                "text": "Cgroup readiness: CG102"
+              }
+            },
+            {
+              "helpUri": "https://kubernetes.io/docs/concepts/architecture/cgroups/",
+              "id": "CG103",
+              "shortDescription": {
+                "text": "Cgroup readiness: CG103"
+              }
+            },
+            {
+              "helpUri": "https://kubernetes.io/docs/concepts/architecture/cgroups/",
+              "id": "CG104",
+              "shortDescription": {
+                "text": "Cgroup readiness: CG104"
+              }
+            },
+            {
+              "helpUri": "https://github.com/dotnet/runtime/issues/30337",
+              "id": "CG106",
+              "shortDescription": {
+                "text": "Cgroup readiness: CG106"
+              }
+            }
+          ],
+          "version": "0.1.0-dev.8"
+        }
+      }
+    }
+  ],
+  "version": "2.1.0"
+}

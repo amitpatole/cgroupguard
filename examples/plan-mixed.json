@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "nodes": [
+    {"name":"gke-a-1","os":"linux","provider":"gke","pool":"pool-legacy","arch":"amd64","instanceType":"e2-standard-4","cgroup":"v1","evidence":"EXAMPLE ONLY: metric"},
+    {"name":"gke-a-2","os":"linux","provider":"gke","pool":"pool-legacy","arch":"amd64","instanceType":"e2-standard-4","cgroup":"v1","evidence":"EXAMPLE ONLY: metric"},
+    {"name":"eks-b-1","os":"linux","osImage":"Amazon Linux 2","provider":"eks","pool":"workers-al2","arch":"amd64","instanceType":"m5.large","cgroup":"v1","evidence":"EXAMPLE ONLY: probe"},
+    {"name":"aks-c-1","os":"linux","osImage":"Ubuntu 20.04.6 LTS","provider":"aks","pool":"userpool1","arch":"amd64","instanceType":"Standard_D4s_v3","cgroup":"v1","evidence":"EXAMPLE ONLY: probe"},
+    {"name":"onprem-1","os":"linux","provider":"unknown","cgroup":"hybrid","evidence":"EXAMPLE ONLY: local"},
+    {"name":"onprem-2","os":"linux","provider":"unknown","cgroup":"v1","evidence":"EXAMPLE ONLY: local"},
+    {"name":"mystery-1","os":"linux","provider":"unknown","cgroup":"unknown","evidence":"EXAMPLE ONLY: inventory"},
+    {"name":"modern-1","os":"linux","provider":"unknown","cgroup":"v2","evidence":"EXAMPLE ONLY: statfs"}
+  ],
+  "workloads": [
+    {"namespace":"shop","kind":"Deployment","name":"api","container":"app","containerType":"regular","image":"eclipse-temurin:11.0.15-jre","replicas":3,"pdb":"present","placements":{"gke-a-1":1,"gke-a-2":1,"eks-b-1":1}},
+    {"namespace":"shop","kind":"StatefulSet","name":"db","container":"db","containerType":"regular","image":"node:18.20.4","replicas":1,"stateful":true,"pdb":"none","placements":{"aks-c-1":1}},
+    {"namespace":"obs","kind":"DaemonSet","name":"metrics","container":"agent","containerType":"regular","image":"gcr.io/cadvisor/cadvisor:v0.42.0","replicas":5,"pdb":"none","placements":{"gke-a-1":1,"gke-a-2":1,"eks-b-1":1,"aks-c-1":1,"onprem-1":1}},
+    {"namespace":"batch","kind":"Job","name":"reader","container":"task","containerType":"regular","image":"private.example/custom:1.0.0","pathSignals":["/sys/fs/cgroup/memory/"],"replicas":1,"pdb":"none","placements":{"onprem-2":1}}
+  ]
+}
