@@ -1,6 +1,7 @@
-# Example only. Pin every action to a full commit SHA in real use. cgroupguard is installed by the
-# amitpatole/cgroupguard-action (verifies the Cosign signature and checksum, fails closed); install and
-# verify kubent and pluto from their own release pages.
+# Example only. Pin every action to a full commit SHA in real use. cgroupguard is installed by the verifying
+# installer: copy distribution/action/install.sh to ci/install-cgroupguard.sh and distribution/cosign.pub to
+# ci/cgroupguard-cosign.pub in your repository (review the script first). It checks the Cosign signature and the
+# checksum and fails closed. Install and verify kubent and pluto from their own release pages.
 name: kubernetes-upgrade-gate
 on: [workflow_dispatch]
 permissions:
@@ -11,7 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4   # pin to a SHA
-      # ... install and verify kubent, pluto, cgroupguard; configure kubeconfig with a
+      - name: Install cgroupguard (signature and checksum verified)
+        run: |
+          # cosign must already be on PATH: install it first, for example with sigstore/cosign-installer (pin it to a commit SHA)
+          VERSION=0.1.0 BASE_URL=https://github.com/amitpatole/cgroupguard/releases/download \
+            PUBKEY=ci/cgroupguard-cosign.pub DEST="$HOME/bin" ci/install-cgroupguard.sh
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      # ... install and verify kubent and pluto; configure kubeconfig with a
       # read-only identity (deploy/rbac.yaml, deploy/workload-rbac.yaml) ...
       - name: Run the three checks
         run: TARGET=1.35 OUT=reports examples/ci/upgrade-gate.sh

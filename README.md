@@ -31,7 +31,21 @@ cgroupguard check --input snapshot.json -o json   # scan a saved snapshot
 cgroupguard fix --plan --context my-cluster       # write a remediation runbook, changing nothing
 ```
 
-See the [quickstart](docs/quickstart.md), [permissions](docs/permissions.md) and the full [documentation](docs/README.md).
+## Documentation
+
+| | |
+|---|---|
+| [Quickstart](docs/quickstart.md) | five minutes, no cluster needed |
+| [Install](docs/install.md) | every channel, and how to verify a download |
+| [Scan a cluster](docs/guides/scan-a-cluster.md) | step by step, with the roles it needs |
+| [Evidence sources](docs/guides/evidence-sources.md) | turn "unknown" nodes into measured ones |
+| [CI gating](docs/guides/ci-gating.md) | exit codes, SARIF and ready-made pipeline files |
+| [Plan a migration](docs/guides/plan-managed-clusters.md) | GKE, EKS, AKS and [self-managed nodes](docs/guides/plan-self-managed-nodes.md) |
+| [Controller and monitoring](docs/guides/controller-and-monitoring.md) | in-cluster scans, metrics and alerts |
+| [Rule catalogue](docs/reference/rules.md) | every finding explained |
+| [Troubleshooting](docs/troubleshooting.md) | error messages and what to do |
+
+Everything is indexed in [docs/README.md](docs/README.md).
 
 ## Status
 

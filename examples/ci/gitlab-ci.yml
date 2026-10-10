@@ -1,5 +1,5 @@
-# Example only. Copy distribution/action/install.sh into your repository (review it first), commit your Cosign
-# public key, and pin the version. Installation fails closed if the signature or checksum does not match.
+# Example only. Copy distribution/action/install.sh to ci/install-cgroupguard.sh and distribution/cosign.pub to
+# ci/cgroupguard-cosign.pub in your repository (review the script first), and pin the version. Installation fails closed if the signature or checksum does not match.
 upgrade-gate:
   stage: test
   image: alpine:3.20            # pin by digest in real use

@@ -12,7 +12,7 @@
 
 ## Assumptions
 
-- 1 Linux node\(s\) have an unknown cgroup mode. They are not migrated by this plan until the mode is established \(step P1.2\).
+- 1 Linux node(s) have an unknown cgroup mode. They are not migrated by this plan until the mode is established (step P1.2).
 
 ## Migration order
 

@@ -75,6 +75,10 @@ nfpms:
         dst: /usr/share/doc/cgroupguard/LICENSE
       - src: NOTICE
         dst: /usr/share/doc/cgroupguard/NOTICE
+      # The short command name: `cgg` runs the same program.
+      - src: /usr/bin/cgroupguard
+        dst: /usr/bin/cgg
+        type: symlink
       - src: distribution/THIRD-PARTY-NOTICES.txt
         dst: /usr/share/doc/cgroupguard/THIRD-PARTY-NOTICES.txt
     # Installing the CLI must not start a controller or touch any cluster: no scripts.

@@ -14,7 +14,9 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
+	"strings"
 	"syscall"
 )
 
@@ -81,6 +83,7 @@ func NewRoot(out, errOut io.Writer, code *int) *cobra.Command {
 func Run(args []string, out, errOut io.Writer) int {
 	code := 0
 	root := NewRoot(out, errOut, &code)
+	root.Use = commandName(os.Args[0])
 	root.SetArgs(args)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -89,6 +92,17 @@ func Run(args []string, out, errOut io.Writer) int {
 		return 2
 	}
 	return code
+}
+
+// commandName is the name shown in usage and help: "cgg" when the program was started under that short
+// name (a symlink or a copy), otherwise "cgroupguard".
+func commandName(arg0 string) string {
+	// both separators, so a Windows path is understood wherever the code runs
+	base := strings.TrimSuffix(strings.ToLower(path.Base(strings.ReplaceAll(arg0, "\\", "/"))), ".exe")
+	if base == "cgg" {
+		return "cgg"
+	}
+	return "cgroupguard"
 }
 
 var failRank = map[string]int{"high": 0, "warning": 1, "note": 2, "none": -1}

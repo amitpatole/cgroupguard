@@ -1,4 +1,4 @@
-# cgroupguard documentation
+# cgroupguard
 
 ![demo](media/demo.gif)
 
@@ -8,20 +8,44 @@ The risk is not only the nodes: workloads and agents that read v1 paths or use o
 
 It is **read-only by default**, it **never certifies** that a cluster can be upgraded, and it says **unknown** when it could not measure something.
 
-| Read | For |
+## Start here
+
+| If you want to... | Read |
 |---|---|
-| [Install](install.md) | Every way to install, and how to verify what you downloaded |
-| [Quickstart](quickstart.md) | Your first scan in five minutes |
-| [How it works](concepts.md) | Evidence, confidence, blast radius, what "unknown" means |
-| [Permissions](permissions.md) | The exact access each feature needs |
-| [Exit codes and output](output.md) | CI gating, JSON, SARIF, Markdown |
-| [Remediation](remediation.md) | `fix --plan`, Terraform and Ansible output, `--apply`, `--pr` |
-| [Controller](controller.md) | Run it inside a cluster with metrics |
-| [Assistant](assistant.md) | Optional model-written explanations (off unless you ask) |
-| [Runtime coverage](runtime-coverage.md) | Which runtimes and agents have rules, and how sure we are |
-| [Command reference](cli/cgroupguard.md) | Every command and flag |
-| [FAQ](faq.md) | Common questions |
-| [Optional permissions](optional-permissions.md) | The risky permissions, and the guardrail for probe pods |
-| [Sources](sources.md) | Where each rule and plan fact comes from |
-| [Security](security.md) | How to report a problem |
-| [Prior art](prior-art.md) | Related tools and what this adds |
+| Install it and check the download | [Install](install.md) |
+| See what it does in five minutes, with no cluster | [Quickstart](quickstart.md) |
+| Understand evidence, confidence and blast radius | [How it works](concepts.md) |
+
+## Guides
+
+| Task | Guide |
+|---|---|
+| Scan a real cluster, step by step | [Scan a cluster](guides/scan-a-cluster.md) |
+| Turn "unknown" nodes into measured ones | [Evidence sources](guides/evidence-sources.md) |
+| Understand every part of a finding | [Read a report](guides/read-a-report.md) |
+| Fail a pipeline before an upgrade | [CI gating](guides/ci-gating.md) |
+| Plan the migration of GKE, EKS or AKS node pools | [Managed clusters](guides/plan-managed-clusters.md) |
+| Plan the migration of self-managed nodes | [Self-managed nodes](guides/plan-self-managed-nodes.md) |
+| Apply drains yourself or open a pull request | [Apply and pull requests](guides/apply-and-pull-requests.md) |
+| Run it inside the cluster and alert on it | [Controller and monitoring](guides/controller-and-monitoring.md) |
+| Get plain-language explanations from a model | [Assistant](guides/assistant.md) |
+| Scan without a cluster connection | [Offline snapshots](guides/offline-snapshots.md) |
+
+## Reference
+
+| | |
+|---|---|
+| [Command reference](cli/cgroupguard.md) | every command and flag |
+| [Rule catalogue](reference/rules.md) | every finding ID, what triggers it and what to do |
+| [Output and exit codes](output.md) | formats, exit codes, JSON fields |
+| [Permissions](permissions.md) and [optional permissions](optional-permissions.md) | the exact access each feature needs |
+| [Runtime coverage](runtime-coverage.md) | which runtimes and agents have rules, and how sure we are |
+| [Sources](sources.md) | where each rule and plan fact comes from |
+| [Environment variables](reference/environment.md) | |
+| [Glossary](reference/glossary.md) | |
+
+## Help
+
+[Troubleshooting](troubleshooting.md) · [FAQ](faq.md) · [Security](security.md) · [Prior art](prior-art.md)
+
+Found a bug or a wrong result? Open an issue at https://github.com/amitpatole/cgroupguard/issues. Security problems: see [Security](security.md).

@@ -24,7 +24,8 @@ func light(s string) string {
 }
 
 // esc neutralizes Markdown, HTML and control characters in text that may come from a
-// cluster or an API error message.
+// cluster or an API error message. Parentheses are left alone: they only matter right after
+// a closing bracket, and brackets are escaped, so no link or image can be formed.
 func esc(s string) string {
 	var b strings.Builder
 	for _, r := range s {
@@ -33,7 +34,7 @@ func esc(s string) string {
 			b.WriteByte(' ')
 		case r < 0x20 || r == 0x7f:
 			b.WriteByte('?')
-		case strings.ContainsRune("\\`*_{}[]<>()#+!|~&\"'", r):
+		case strings.ContainsRune("\\`*_[]<>|&", r):
 			b.WriteByte('\\')
 			b.WriteRune(r)
 		default:
