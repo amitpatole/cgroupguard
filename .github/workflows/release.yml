@@ -14,8 +14,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: {fetch-depth: 0}
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with: {go-version-file: go.mod, cache: true}
+      - name: The tagged commit is on main
+        if: github.ref_type == 'tag'
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "refusing: tag $GITHUB_REF_NAME is not on main" >&2; exit 1; }
       - name: The tag matches the version in the code
         if: github.ref_type == 'tag'
         run: test "${GITHUB_REF_NAME#v}" = "$(sed -n 's/.*Version = "\(.*\)"/\1/p' internal/version/version.go)"
@@ -23,7 +29,7 @@ jobs:
       - run: go test -race -count=1 ./...
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
   dry-run:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 40

@@ -3,3 +3,4 @@
 /coverage.out
 *.kubeconfig
 /cgroupguard
+gha-creds-*.json
