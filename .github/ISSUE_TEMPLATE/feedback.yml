@@ -1,0 +1,68 @@
+name: I tried it (feedback)
+description: Tell us how it went, good or bad. No bug needed.
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Short answers are fine. This helps decide what gets built next. Please keep real cluster output out of it.
+  - type: dropdown
+    id: what
+    attributes:
+      label: What did you scan?
+      options:
+        - "A production cluster"
+        - "A non-production cluster"
+        - "The sample snapshot only"
+        - "A saved snapshot of my own"
+        - "One Linux host (--local)"
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Where does it run?
+      options:
+        - "GKE"
+        - "EKS"
+        - "AKS"
+        - "Self-managed or bare metal"
+        - "Local (kind, k3s or minikube)"
+        - "Other"
+  - type: dropdown
+    id: size
+    attributes:
+      label: How many nodes?
+      options:
+        - "1-5"
+        - "6-20"
+        - "21-100"
+        - "100+"
+  - type: dropdown
+    id: accuracy
+    attributes:
+      label: Did the findings match what you already knew?
+      options:
+        - "Yes, they matched"
+        - "Mostly"
+        - "Some were wrong or missed"
+        - "Mostly wrong"
+        - "I could not tell"
+  - type: textarea
+    id: unclear
+    attributes:
+      label: What was confusing, missing or wrong?
+  - type: dropdown
+    id: ci
+    attributes:
+      label: Would you run it in CI before upgrades?
+      options:
+        - "Yes"
+        - "Maybe"
+        - "No"
+  - type: checkboxes
+    id: adopter
+    attributes:
+      label: Optional
+      options:
+        - label: You may list my organization (or me) in ADOPTERS.md. I will tell you what name to use.

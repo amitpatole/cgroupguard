@@ -52,6 +52,14 @@ Everything is indexed in [docs/README.md](docs/README.md).
 Pre-1.0. Rules are versioned data with cited sources; runtimes without verified documentation are marked *review*, never pass or fail.
 Managed-cloud (GKE, EKS, AKS) plans are generated from provider documentation and have not yet been run on those platforms.
 
+## Using it? Tell us
+
+cgroupguard sends no usage data, so we only learn that it helps if you say so.
+
+- Tried it? Leave short [feedback](https://github.com/amitpatole/cgroupguard/issues/new?template=feedback.yml). It takes a minute.
+- Found a bug or a wrong result? [Open an issue](https://github.com/amitpatole/cgroupguard/issues/new?template=bug_report.yml).
+- Using it for real? Add yourself to [ADOPTERS.md](ADOPTERS.md) or post in the [Discussions](https://github.com/amitpatole/cgroupguard/discussions).
+
 ## License and citation
 
 Apache License 2.0 (see [LICENSE](LICENSE)). Redistributions must keep the [NOTICE](NOTICE) file, which credits the author.

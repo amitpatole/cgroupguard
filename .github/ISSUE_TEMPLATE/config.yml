@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security problem (private)
+    url: https://github.com/amitpatole/cgroupguard/security/advisories/new
+    about: Please do not report vulnerabilities in a public issue.
+  - name: Ask a question or share how you use cgroupguard
+    url: https://github.com/amitpatole/cgroupguard/discussions
+    about: Questions, ideas, and "Who is using cgroupguard?".
