@@ -17,7 +17,7 @@ $ helm install cgroupguard oci://ghcr.io/amitpatole/charts/cgroupguard --version
     --set 'networkPolicy.metricsAllowFrom[0].namespaceSelector.matchLabels.kubernetes\.io/metadata\.name=monitoring'
 ```
 
-Pin the image by `digest` in production. Every digest is listed on the release page, and the signature can be checked as shown in [Install](../install.md).
+Pin the image by `digest` in production. Get the digest with `docker buildx imagetools inspect ghcr.io/amitpatole/cgroupguard:0.1.0`, and verify it with `cosign verify` as shown in [Install](../install.md#verify-what-you-downloaded).
 
 The most useful settings (`values.yaml` documents all of them):
 

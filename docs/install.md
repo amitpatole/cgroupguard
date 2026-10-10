@@ -38,8 +38,15 @@ cgroupguard_0.1.0_linux_amd64.tar.gz: OK
 `--insecure-ignore-tlog=true` only says that no transparency log is consulted. The signature itself is still checked against the key. A modified `checksums.txt` or archive
 fails one of the two commands. On macOS use `shasum -a 256 -c checksums.txt --ignore-missing`.
 
-What is signed: the checksum list, and through it every archive, package and SBOM. The container image and the Helm chart are **not** signed in 0.1.0: pin the image by
-its digest instead (see below).
+What is signed: the checksum list, and through it every archive, package and SBOM; and the container image and the Helm chart, each by digest, with the same key.
+Verify an image or a chart (the signature is stored next to it in the registry, and nothing is looked up in a public log):
+
+```console
+$ cosign verify --key cosign.pub --insecure-ignore-tlog=true ghcr.io/amitpatole/cgroupguard:0.1.0
+$ cosign verify --key cosign.pub --insecure-ignore-tlog=true ghcr.io/amitpatole/charts/cgroupguard:0.1.0
+```
+
+A tag can be moved; pin by digest in production (see below), and verify that digest.
 
 ## Release archive
 

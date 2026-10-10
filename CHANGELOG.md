@@ -8,4 +8,4 @@ First public release.
 - Remediation plans: runbook, Terraform (GKE, EKS, AKS) and Ansible; guarded apply and draft pull request/merge request creation.
 - In-cluster controller with metrics, Events and a custom resource; Helm chart with least-privilege RBAC.
 - Optional read-only assistant with redaction, budgets and an audit log.
-- Signed release archives, packages, container image and chart; Apache License 2.0.
+- Release archives and packages with a signed checksum list and SBOMs; a signed container image and Helm chart; Apache License 2.0.

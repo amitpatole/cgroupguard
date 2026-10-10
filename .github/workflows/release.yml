@@ -94,4 +94,20 @@ jobs:
           ver="${GITHUB_REF_NAME#v}"
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
           helm package charts/cgroupguard --version "$ver" --app-version "$ver" -d "$RUNNER_TEMP/chart"
-          helm push "$RUNNER_TEMP"/chart/cgroupguard-*.tgz oci://ghcr.io/amitpatole/charts
+          helm push "$RUNNER_TEMP"/chart/cgroupguard-*.tgz oci://ghcr.io/amitpatole/charts | tee "$RUNNER_TEMP/helm-push.txt"
+      - name: Sign the container image and the chart
+        # Signatures are stored next to the artifacts in the registry. As for the archives, the signing
+        # configuration is empty on purpose: nothing is uploaded to a public transparency log.
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          image_digest="$(docker buildx imagetools inspect "ghcr.io/amitpatole/cgroupguard:$ver" --format '{{.Manifest.Digest}}')"
+          chart_digest="$(awk '/^Digest:/ {print $2}' "$RUNNER_TEMP/helm-push.txt")"
+          case "$image_digest" in sha256:*) ;; *) echo "no image digest" >&2; exit 1;; esac
+          case "$chart_digest" in sha256:*) ;; *) echo "no chart digest" >&2; exit 1;; esac
+          for ref in "ghcr.io/amitpatole/cgroupguard@$image_digest" "ghcr.io/amitpatole/charts/cgroupguard@$chart_digest"; do
+            cosign sign --yes --key "$COSIGN_KEY_REF" --signing-config distribution/cosign-signing-config.json "$ref"
+            cosign verify --key distribution/cosign.pub --insecure-ignore-tlog=true "$ref" > /dev/null
+          done
+        env:
+          COSIGN_KEY_REF: ${{ vars.COSIGN_KEY_REF }}
+          GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
