@@ -7,5 +7,5 @@ authors:
     given-names: "Amit"
 license: Apache-2.0
 repository-code: "https://github.com/amitpatole/cgroupguard"
-version: "0.1.0"
+version: "0.1.1"
 keywords: [kubernetes, cgroup, cgroup-v2, upgrade-readiness]

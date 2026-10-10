@@ -9,7 +9,7 @@ It has no access to Secrets or ConfigMaps.
 The chart is published as an OCI artifact. The image must be provided: there is no default registry in the chart.
 
 ```console
-$ helm install cgroupguard oci://ghcr.io/amitpatole/charts/cgroupguard --version 0.1.0 \
+$ helm install cgroupguard oci://ghcr.io/amitpatole/charts/cgroupguard --version 0.1.1 \
     --namespace cgroupguard-system --create-namespace \
     --set image.repository=ghcr.io/amitpatole/cgroupguard \
     --set image.digest=sha256:DIGEST_OF_THE_RELEASE_IMAGE \
@@ -17,7 +17,7 @@ $ helm install cgroupguard oci://ghcr.io/amitpatole/charts/cgroupguard --version
     --set 'networkPolicy.metricsAllowFrom[0].namespaceSelector.matchLabels.kubernetes\.io/metadata\.name=monitoring'
 ```
 
-Pin the image by `digest` in production. Get the digest with `docker buildx imagetools inspect ghcr.io/amitpatole/cgroupguard:0.1.0`, and verify it with `cosign verify` as shown in [Install](../install.md#verify-what-you-downloaded).
+Pin the image by `digest` in production. Get the digest with `docker buildx imagetools inspect ghcr.io/amitpatole/cgroupguard:0.1.1`, and verify it with `cosign verify` as shown in [Install](../install.md#verify-what-you-downloaded).
 
 The most useful settings (`values.yaml` documents all of them):
 

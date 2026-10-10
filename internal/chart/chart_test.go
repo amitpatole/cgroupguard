@@ -167,7 +167,7 @@ func TestPodIsHardened(t *testing.T) {
 	if len(list(spec["volumes"])) != 0 {
 		t.Error("the pod mounts volumes")
 	}
-	if !strings.Contains(c["image"].(string), ":0.1.0") {
+	if !strings.HasSuffix(c["image"].(string), ":"+version.Version) {
 		t.Errorf("image tag does not default to the chart version: %v", c["image"])
 	}
 }

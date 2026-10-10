@@ -102,9 +102,10 @@ release:
   prerelease: auto
   name_template: "cgroupguard {{ .Version }}"
 
-# Release notes come from the matching section of CHANGELOG.md (--release-notes), not from commit messages.
+# Release notes come from the matching section of CHANGELOG.md (--release-notes). With that flag GoReleaser uses the
+# file and does not generate notes from commit messages. (Do not set `disable: true`: it also skips loading the file.)
 changelog:
-  disable: true
+  sort: asc
 
 # A Homebrew tap is not part of 0.1.0; the cask returns once the tap repository exists.
 

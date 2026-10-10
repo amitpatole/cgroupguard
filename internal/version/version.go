@@ -2,4 +2,4 @@
 package version
 
 // Version is reported by --version and embedded in SARIF output.
-const Version = "0.1.0"
+const Version = "0.1.1"

@@ -32,7 +32,7 @@ Verification works offline. Nothing is looked up in a public transparency log, b
 $ cosign verify-blob --key cosign.pub --bundle checksums.txt.sigstore.json --insecure-ignore-tlog=true checksums.txt
 Verified OK
 $ sha256sum -c checksums.txt --ignore-missing
-cgroupguard_0.1.0_linux_amd64.tar.gz: OK
+cgroupguard_0.1.1_linux_amd64.tar.gz: OK
 ```
 
 `--insecure-ignore-tlog=true` only says that no transparency log is consulted. The signature itself is still checked against the key. A modified `checksums.txt` or archive
@@ -42,8 +42,8 @@ What is signed: the checksum list, and through it every archive, package and SBO
 Verify an image or a chart (the signature is stored next to it in the registry, and nothing is looked up in a public log):
 
 ```console
-$ cosign verify --key cosign.pub --insecure-ignore-tlog=true ghcr.io/amitpatole/cgroupguard:0.1.0
-$ cosign verify --key cosign.pub --insecure-ignore-tlog=true ghcr.io/amitpatole/charts/cgroupguard:0.1.0
+$ cosign verify --key cosign.pub --insecure-ignore-tlog=true ghcr.io/amitpatole/cgroupguard:0.1.1
+$ cosign verify --key cosign.pub --insecure-ignore-tlog=true ghcr.io/amitpatole/charts/cgroupguard:0.1.1
 ```
 
 A tag can be moved; pin by digest in production (see below), and verify that digest.
@@ -51,7 +51,7 @@ A tag can be moved; pin by digest in production (see below), and verify that dig
 ## Release archive
 
 ```console
-$ VERSION=0.1.0
+$ VERSION=0.1.1
 $ curl -fsSLO https://github.com/amitpatole/cgroupguard/releases/download/v$VERSION/cgroupguard_${VERSION}_linux_amd64.tar.gz
 $ curl -fsSLO https://github.com/amitpatole/cgroupguard/releases/download/v$VERSION/checksums.txt
 $ curl -fsSLO https://github.com/amitpatole/cgroupguard/releases/download/v$VERSION/checksums.txt.sigstore.json
@@ -59,7 +59,7 @@ $ curl -fsSLO https://github.com/amitpatole/cgroupguard/releases/download/v$VERS
 $ tar -xzf cgroupguard_${VERSION}_linux_amd64.tar.gz
 $ sudo install -m 0755 cgroupguard /usr/local/bin/
 $ cgroupguard --version
-cgroupguard version 0.1.0
+cgroupguard version 0.1.1
 ```
 
 The archive contains `cgroupguard`, `LICENSE`, `NOTICE`, `THIRD-PARTY-NOTICES.txt`, a short `README.txt` and the read-only role manifests in `deploy/`.
@@ -72,8 +72,8 @@ macOS: the binary is not Apple-notarized. After verifying the signature, remove 
 ## Linux packages
 
 ```console
-$ sudo dpkg -i cgroupguard_0.1.0_linux_amd64.deb      # Debian, Ubuntu
-$ sudo rpm -i cgroupguard_0.1.0_linux_amd64.rpm       # RHEL, Fedora
+$ sudo dpkg -i cgroupguard_0.1.1_linux_amd64.deb      # Debian, Ubuntu
+$ sudo rpm -i cgroupguard_0.1.1_linux_amd64.rpm       # RHEL, Fedora
 $ cgroupguard --version
 ```
 
@@ -83,14 +83,14 @@ The packages install the binary and the license files under `/usr/share/doc/cgro
 ## Container image
 
 ```console
-$ docker run --rm ghcr.io/amitpatole/cgroupguard:0.1.0 --version
-cgroupguard version 0.1.0
+$ docker run --rm ghcr.io/amitpatole/cgroupguard:0.1.1 --version
+cgroupguard version 0.1.1
 ```
 
 The image is built from a minimal base with no shell, runs as a non-root user and contains only the binary and the license notices. To pin it by digest:
 
 ```console
-$ docker buildx imagetools inspect ghcr.io/amitpatole/cgroupguard:0.1.0      # note the Digest: line
+$ docker buildx imagetools inspect ghcr.io/amitpatole/cgroupguard:0.1.1      # note the Digest: line
 $ docker run --rm ghcr.io/amitpatole/cgroupguard@sha256:DIGEST --version
 ```
 
@@ -106,7 +106,7 @@ $ docker run --rm --user "$(id -u):$(id -g)" -v "$HOME/.kube/config:/kube/config
 The controller and its chart are described in [Controller and monitoring](guides/controller-and-monitoring.md).
 
 ```console
-$ helm show chart oci://ghcr.io/amitpatole/charts/cgroupguard --version 0.1.0
+$ helm show chart oci://ghcr.io/amitpatole/charts/cgroupguard --version 0.1.1
 ```
 
 ## From source

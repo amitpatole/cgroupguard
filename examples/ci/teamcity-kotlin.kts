@@ -8,7 +8,7 @@ project {
     id("UpgradeReadiness")
     name = "Kubernetes upgrade readiness (cgroupguard)"
     params {
-      param("env.CGROUPGUARD_VERSION", "0.1.0")
+      param("env.CGROUPGUARD_VERSION", "0.1.1")
       param("env.BASE_URL", "https://github.com/amitpatole/cgroupguard/releases/download")
     }
     steps {

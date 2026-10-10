@@ -2,7 +2,7 @@
 pipeline {
   agent any
   environment {
-    CGROUPGUARD_VERSION = '0.1.0'
+    CGROUPGUARD_VERSION = '0.1.1'
     BASE_URL = 'https://github.com/amitpatole/cgroupguard/releases/download'
   }
   stages {

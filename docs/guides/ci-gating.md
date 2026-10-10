@@ -38,7 +38,7 @@ It fails closed on any problem.
 3. Call it with the version and the release host:
 
 ```console
-$ VERSION=0.1.0 \
+$ VERSION=0.1.1 \
   BASE_URL=https://github.com/amitpatole/cgroupguard/releases/download \
   PUBKEY=ci/cgroupguard-cosign.pub \
   DEST="$HOME/bin" \

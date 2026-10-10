@@ -2,8 +2,8 @@ apiVersion: v2
 name: cgroupguard
 description: Optional in-cluster controller for cgroup v1 to v2 readiness scans. Read-only toward the cluster; writes only the status of its own resource and Events.
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.1.1
+appVersion: "0.1.1"
 kubeVersion: ">=1.30.0-0"
 keywords: [cgroup, kubernetes, upgrade, readiness]
 annotations:
@@ -13,7 +13,7 @@ annotations:
   artifacthub.io/prerelease: "false"
   artifacthub.io/images: |
     - name: controller
-      image: ghcr.io/amitpatole/cgroupguard:0.1.0
+      image: ghcr.io/amitpatole/cgroupguard:0.1.1
   artifacthub.io/crds: |
     - kind: CgroupReadiness
       version: v1alpha1

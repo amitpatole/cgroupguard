@@ -7,7 +7,7 @@ repository (clone it, or copy the file from the repository page). Every output b
 
 ```console
 $ cgroupguard --version
-cgroupguard version 0.1.0
+cgroupguard version 0.1.1
 ```
 
 ## 2. Run a check on the sample

@@ -5,7 +5,7 @@ kind: Task
 metadata: {name: cgroupguard-check}
 spec:
   params:
-    - {name: version, type: string, description: "cgroupguard version without the v, for example 0.1.0"}
+    - {name: version, type: string, description: "cgroupguard version without the v, for example 0.1.1"}
     - {name: target, type: string, default: "1.35"}
   workspaces:
     - {name: ci, description: "workspace holding ci/install-cgroupguard.sh and the Cosign public key"}
